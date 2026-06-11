@@ -151,7 +151,7 @@ public class GameTable extends TableSink {
             String line = String.valueOf(prizeIcon.getLine()).concat("x");
             String iconStr = SYMBOL_NAME[prizeIcon.getIcon()];
             int endPosColumnId = checkEndColumnId(prizeIcon.getPrizeIndex());
-            String lineIdEndPos = "Line ".concat(String.valueOf(prizeIcon.getHitLine() + 1)).concat(" - ").concat(String.valueOf(endPosColumnId));
+            String lineIdEndPos = "Line ".concat(String.valueOf(prizeIcon.getHitLine() + 1)).concat(" - ").concat(String.valueOf(endPosColumnId + 1));
             List<String> winLine = Arrays.asList(line, iconStr, lineIdEndPos);
             result.add(winLine);
         }
