@@ -25,16 +25,16 @@ public class LotteryConfig {
     public static final int WILD = 0;
 
 
-    public static final double SMALL_WIN_PRO = 0.697;
+    public static final double SMALL_WIN_PRO = 0.12697;
     /**
      * 中长线的概率
      */
-    public static final double LONG_LINES_PRO = 0.07;
+    public static final double LONG_LINES_PRO = 0.001;
 
     /**
      * 金框个数概率 1, 2, 3, 4
      */
-    static final double[] WILD_PRO = {0.151, 0.20, 0.05, 0.001};
+    static final double[] WILD_PRO = {0.101, 0.06, 0.015};
 
     static final double[] ICON_PRO = {0.070062003, 0.069753073, 0.077278421, 0.072926849, 0.069948568, 0.163841644, 0.167787746, 0.153417662, 0.154984035};
 
@@ -140,12 +140,13 @@ public class LotteryConfig {
         return ICONS_WITH_MULTIPLE[ICONS_WITH_MULTIPLE.length - 1];
     }
 
-    public static int getWildSize() {
+    public static int getWildSize(double factor) {
+        factor = factor > 1 ? factor : Math.pow(factor, 3);
         double random = RandomUtil.nextDouble();
         double tmp = 0;
         for (int i = WILD_PRO.length - 1; i >= 0; i--) {
             tmp += WILD_PRO[i];
-            if (random <= tmp) {
+            if (random <= tmp * factor) {
                 return i + 1;
             }
         }

@@ -152,7 +152,7 @@ public class GameTable extends TableSink {
             String iconStr = SYMBOL_NAME[prizeIcon.getIcon()];
             int endPosColumnId = checkEndColumnId(prizeIcon.getPrizeIndex());
             String lineIdEndPos = "Line ".concat(String.valueOf(prizeIcon.getHitLine() + 1)).concat(" - ").concat(String.valueOf(endPosColumnId));
-            List<String> winLine = Arrays.asList(line,iconStr,lineIdEndPos);
+            List<String> winLine = Arrays.asList(line, iconStr, lineIdEndPos);
             result.add(winLine);
         }
         return result;
@@ -162,7 +162,7 @@ public class GameTable extends TableSink {
         int endPos = 0;
         for (Integer index : prizeIndex) {
             int x = index % COLUMNS;
-            if(endPos < x){
+            if (endPos < x) {
                 endPos = x;
             }
         }
@@ -451,7 +451,7 @@ public class GameTable extends TableSink {
 
             for (List<Integer> prizeLine : prizeLines) {
                 //随机找一个图标
-                int icon = LotteryConfig.ICONS_WITH_MULTIPLE[RandomUtil.nextInt(2, ICONS_WITH_MULTIPLE.length)];
+                int icon = LotteryConfig.ICONS_WITH_MULTIPLE[RandomUtil.nextInt(5, ICONS_WITH_MULTIPLE.length)];
                 for (int i1 = 0; i1 < prizeLine.size(); i1++) {
                     if (i1 == 2) continue;
 
@@ -477,17 +477,12 @@ public class GameTable extends TableSink {
 
             for (int i1 = 0; i1 < ROWS; i1++) {
                 if (rotary[i1][i] == -1) {
-                    int icon;
-                    if (i == 0 && RandomUtil.nextDouble() < 0.6886) {
-                        icon = RandomUtil.nextInt(5, 10);
-                    } else {
-                        icon = LotteryConfig.getRandomNormalIcon();
-                    }
+                    int icon = LotteryConfig.getRandomNormalIcon();
                     rotary[i1][i] = icon;
                 }
             }
         }
-        int wildSize = LotteryConfig.getWildSize();
+        int wildSize = LotteryConfig.getWildSize(factor);
         setWildIcon(rotary, wildSize);
         List<Integer> useIcons = arrToList();
         for (int i = 0; i < ROWS; i++) {
@@ -499,13 +494,10 @@ public class GameTable extends TableSink {
                     double mul = prizeMaps.get(icon) * scene.getDoubleMul() * 1.0D / BASE_LINE;
                     double tmpRan = factor > 1 ? factor : Math.pow(factor, 3);
                     double tempFactor = tmpRan * SMALL_WIN_PRO;
-                    if (mul >= 100) { // 不干预100以上倍数
-                        tempFactor = tmpRan;
-                    }
-                    // 降低小奖概率
                     if (mul <= 1) {
-                        tempFactor *= 0.03780182;
+                        tempFactor *= 0.5;
                     }
+
                     if (tempFactor / mul >= RandomUtil.nextDouble()) {
                         rotary[i][2] = icon;
                     }
@@ -779,7 +771,7 @@ public class GameTable extends TableSink {
                 JSONObject jDetails = data.getJSONObject("details");
                 JSONObject extData = jDetails.getJSONObject("extData");
                 String gameDetail = extData.getString("iconData");
-                return JSONObject.parseObject(gameDetail,RoundDetailDto.class);
+                return JSONObject.parseObject(gameDetail, RoundDetailDto.class);
             }
         } catch (Exception e) {
             log.error("rep record error", e);

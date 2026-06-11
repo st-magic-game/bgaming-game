@@ -13,7 +13,7 @@ public class GameTest {
         double factor = 1.006821056d;
         for (int i = 0; i < 10; i++) {
             testPro(factor);
-            factor += 0.05;
+//            factor -= 0.05;
         }
     }
 
@@ -26,20 +26,10 @@ public class GameTest {
         int mul = 1;
         double totalBet = betCount * betScore * mul;
         double totalWin = 0d;
-        double normalWin = 0d;
         double freeWin = 0d;
 
         int mul5 = 0, mul10 = 0, mul20 = 0, mul50 = 0, mul100 = 0, mul200 = 0, mul500 = 0;
 
-        int dropOne = 0;
-        int dropTwo = 0;
-        int dropThree = 0;
-        int dropFour = 0;
-
-        int dropOneFree = 0;
-        int dropTwoFree = 0;
-        int dropThreeFree = 0;
-        int dropFourFree = 0;
         Player player = new Player();
         User account = new User();
         account.setScore(100000);
@@ -55,84 +45,8 @@ public class GameTest {
             try {
                 table.codeResultData(player, betScore, factor);
                 List<Scene> scenes = getScenes(player);
-
-                SpinResponse response = table.generateResponse(scenes,   player.getUser().getScore());
-                boolean hasFree = false;
-                int freeCount = 0;
-                int dropCount = 0;
-                for (int i1 = 0; i1 < scenes.size(); i1++) {
-                    Scene scene = scenes.get(i1);
-                    if (scene.getType() == 1) {
-                        hasFree = true;
-                        freeCount++;
-                    }
-
-                    if (scene.getType() > 0) {
-                        if (scene.isDrop()) {
-                            dropCount++;
-                            if (i1 == scenes.size() - 1) {
-                                if (dropCount == 1) {
-                                    dropOneFree++;
-                                } else if (dropCount == 2) {
-                                    dropTwoFree++;
-                                } else if (dropCount == 3) {
-                                    dropThreeFree++;
-                                } else if (dropCount == 4) {
-                                    dropFourFree++;
-                                }
-                                dropCount = 0;
-                            }
-                        } else {
-                            if (dropCount == 1) {
-                                dropOneFree++;
-                            } else if (dropCount == 2) {
-                                dropTwoFree++;
-                            } else if (dropCount == 3) {
-                                dropThreeFree++;
-                            } else if (dropCount == 4) {
-                                dropFourFree++;
-                            }
-                            dropCount = 0;
-                        }
-                    } else {
-                        if (scene.isDrop()) {
-                            dropCount++;
-                            if (i1 == scenes.size() - 1) {
-                                if (dropCount == 1) {
-                                    dropOne++;
-                                } else if (dropCount == 2) {
-                                    dropTwo++;
-                                } else if (dropCount == 3) {
-                                    dropThree++;
-                                } else if (dropCount == 4) {
-                                    dropFour++;
-                                }
-                                dropCount = 0;
-                            }
-                        } else {
-                            if (dropCount == 1) {
-                                dropOne++;
-                            } else if (dropCount == 2) {
-                                dropTwo++;
-                            } else if (dropCount == 3) {
-                                dropThree++;
-                            } else if (dropCount == 4) {
-                                dropFour++;
-                            }
-                            dropCount = 0;
-                        }
-                    }
-                }
-
+//                SpinResponse response = table.generateResponse(scenes,   player.getUser().getScore());
                 double winTemp = table.getWinGold();
-                if (hasFree) {
-                    freeWin += winTemp;
-//                    System.err.println("### double mul: " + lastScene.getDoubleMul() + " , freeNum: "  + freeCount);
-                    bingoFreeCount++;
-                } else {
-                    normalWin += winTemp;
-                }
-
                 if (winTemp > 0) {
                     totalWin += winTemp;
                     winCount++;
@@ -164,15 +78,6 @@ public class GameTest {
         System.out.println("################### [[[ factor = " + factor + " ]]] ################## 耗时: " + (endTime - startTime));
         System.out.println("总场次: " + betCount + ", 中奖场次: " + winCount + ", 中奖概率: " + (winCount * 1.d / betCount) + ", 赢钱场次: " + finalWinCount + " , 赢钱概率: " + (finalWinCount * 1.d / betCount));
         System.out.println("总场次: " + betCount + ", 中免费次数: " + bingoFreeCount + ", 中免费概率: " + (bingoFreeCount * 1.d / betCount));
-        System.out.println("中奖场次: " + winCount + ", 掉落一次场次: " + dropOne + ", 掉落一次概率: " + (dropOne * 1.d / winCount));
-        System.out.println("中奖场次: " + winCount + ", 掉落二次场次: " + dropTwo + ", 掉落二次概率: " + (dropTwo * 1.d / winCount));
-        System.out.println("中奖场次: " + winCount + ", 掉落三次场次: " + dropThree + ", 掉落三次概率: " + (dropThree * 1.d / winCount));
-        System.out.println("中奖场次: " + winCount + ", 掉落四次场次: " + dropFour + ", 掉落四次概率: " + (dropFour * 1.d / winCount));
-        System.out.println("中奖场次: " + winCount + ", 免费掉落一次场次: " + dropOneFree + ", 掉落一次概率: " + (dropOneFree * 1.d / winCount));
-        System.out.println("中奖场次: " + winCount + ", 免费掉落二次场次: " + dropTwoFree + ", 掉落二次概率: " + (dropTwoFree * 1.d / winCount));
-        System.out.println("中奖场次: " + winCount + ", 免费掉落三次场次: " + dropThreeFree + ", 掉落三次概率: " + (dropThreeFree * 1.d / winCount));
-        System.out.println("中奖场次: " + winCount + ", 免费掉落四次场次: " + dropFourFree + ", 掉落四次概率: " + (dropFourFree * 1.d / winCount));
-        System.out.println("总投注: " + totalBet + ", 总赢出: " + totalWin + ", 中奖概率: " + (totalWin * 1.d / totalBet) + ", 普通赢出: " + normalWin + " , 普通赢出占比: " + (normalWin * 1.d / totalWin));
         System.out.println("总投注: " + totalBet + ", 总赢出: " + totalWin + ", 中奖概率: " + (totalWin * 1.d / totalBet) + ", 免费赢出: " + freeWin + " , 免费赢出占比: " + (freeWin * 1.d / totalWin));
         System.out.println("五倍场次: " + mul5 + " , 十倍场次: " + mul10 + " , 二十倍场次: " + mul20 + " , 五十倍场次: " + mul50 + " , 一百倍场次: " + mul100 + " , 两百倍场次: " + mul200 + " , 五百倍场次: " + mul500);
         System.out.println("open3: " + open3 + " , open4: " + open4 + " , open5: " + open5);
