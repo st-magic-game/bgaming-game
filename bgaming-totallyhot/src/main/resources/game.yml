@@ -1,0 +1,2 @@
+tableSink: com.bgaming.totallyhot.logic.GameTable
+timeout: 900000

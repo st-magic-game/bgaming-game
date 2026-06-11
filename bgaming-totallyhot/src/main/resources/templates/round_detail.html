@@ -1,0 +1,87 @@
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <link rel="stylesheet"
+          th:href="@{/totallyhot/css/active_admin.css}"/>
+    <link rel="stylesheet"
+          th:href="@{/totallyhot/css/application.css}"/>
+    <title></title>
+</head>
+<body>
+
+<h2 class="history_header">
+    Totally Hot: Round Details
+</h2>
+
+<table border="1"
+       class="history_table"
+       id="games_history">
+    <tbody>
+    <tr>
+        <th><h4 class="center_cell">Date/Time</h4></th>
+        <th><h4 class="center_cell">Bet</h4></th>
+        <th><h4 class="center_cell">Total Win</h4></th>
+        <th><h4 class="center_cell">Profit</h4></th>
+        <th><h4 class="center_cell">Balance Before</h4></th>
+        <th><h4 class="center_cell">Balance after</h4></th>
+        <th><h4 class="center_cell">Currency</h4></th>
+        <th><h4 class="center_cell">Used Feature</h4></th>
+    </tr>
+    <tr>
+        <td class="table_delimiter"
+            th:text="${detail.time}"></td>
+        <td class="table_delimiter"
+            th:text="${detail.betText}"></td>
+        <td class="table_delimiter"
+            th:text="${detail.totalWinText}"></td>
+        <td class="table_delimiter"
+            th:text="${detail.profitText}"></td>
+        <td class="table_delimiter"
+            th:text="${detail.balanceBeforeText}"></td>
+        <td class="table_delimiter"
+            th:text="${detail.balanceAfterText}"></td>
+        <td class="table_delimiter"
+            th:text="${detail.currency}"></td>
+        <td class="table_delimiter">
+            <span th:text="${detail.usedFeature ? 'Yes' : 'No'}"></span>
+        </td>
+    </tr>
+    <tr>
+        <td colspan="8" class="round_view">
+            <div class="round_details">
+                <div class="slots_spin">
+                    <div class="slots_outcome columns-5 rows-3">
+                        <div th:each="symbol : ${detail.symbols}"
+                             th:class="'totally_hot-' + ${symbol}">
+                        </div>
+                    </div>
+                    <div class="bets">
+                        Total Bet
+                        <th:block th:text="${detail.betText}"></th:block>
+                        <th:block th:if="${detail.totalWin != null and detail.totalWin > 0}">
+                            <br>
+                            Total Win
+                            <th:block th:text="${detail.totalWinText}"></th:block>
+                        </th:block>
+                    </div>
+                    <div class="payout" th:if="${not #lists.isEmpty(detail.winLines)}">
+                        Win lines
+                        <ul>
+                            <li th:each="line : ${detail.winLines}">
+                                <div class="flex-display">
+                                    [[${line[0]}]]
+                                    <div class="small-symbol">
+                                        <div th:class="'totally_hot-' + ${line[1]}"></div>
+                                    </div>
+                                    [[${line[2]}]]
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </td>
+    </tr>
+    </tbody>
+</table>
+</body>
+</html>
