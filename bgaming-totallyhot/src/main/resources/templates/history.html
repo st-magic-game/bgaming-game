@@ -1,9 +1,9 @@
 <html lang="en">
 <head>
     <link rel="stylesheet"
-          th:href="@{/totallyhot/css/active_admin.css}"/>
+          th:href="@{/{path}/css/active_admin.css(path=${@environment.getProperty('game.proxy_path')})}"/>
     <link rel="stylesheet"
-          th:href="@{/totallyhot/css/application.css}"/>
+          th:href="@{/{path}/css/application.css(path=${@environment.getProperty('game.proxy_path')})}"/>
     <title></title>
 </head>
 <body>
@@ -48,8 +48,8 @@
         </td>
         <td class='table_delimiter'>
             <a target="_blank"
-               th:href="@{/totallyhot/api/rounds_history/-/{token}
-   (token=${item.token})}">
+               th:href="@{/{path}/api/rounds_history/-/{token}
+   (token=${item.token},path=${@environment.getProperty('game.proxy_path')})}">
                 Round Link
             </a>
         </td>
