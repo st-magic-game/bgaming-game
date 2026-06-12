@@ -1,0 +1,26 @@
+payLines:
+  - id: 0
+    positions:
+      - 0
+      - 0
+      - 0
+  - id: 1
+    positions:
+      - 1
+      - 1
+      - 1
+  - id: 2
+    positions:
+      - 2
+      - 2
+      - 2
+  - id: 3
+    positions:
+      - 0
+      - 1
+      - 2
+  - id: 4
+    positions:
+      - 2
+      - 1
+      - 0

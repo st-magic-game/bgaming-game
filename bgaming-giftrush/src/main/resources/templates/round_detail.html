@@ -1,0 +1,111 @@
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <link rel="stylesheet"
+          th:href="@{/{path}/css/active_admin.css(path=${@environment.getProperty('game.proxy_path')})}"/>
+    <link rel="stylesheet"
+          th:href="@{/{path}/css/application.css(path=${@environment.getProperty('game.proxy_path')})}"/>
+
+    <title></title>
+</head>
+<body>
+
+<h2 class="history_header">
+    Gift Rush: Round Details
+</h2>
+
+<table border="1"
+       class="history_table"
+       id="games_history">
+    <tbody>
+    <tr>
+        <th><h4 class="center_cell">Date/Time</h4></th>
+        <th><h4 class="center_cell">Bet</h4></th>
+        <th><h4 class="center_cell">Total Win</h4></th>
+        <th><h4 class="center_cell">Profit</h4></th>
+        <th><h4 class="center_cell">Balance Before</h4></th>
+        <th><h4 class="center_cell">Balance after</h4></th>
+        <th><h4 class="center_cell">Currency</h4></th>
+        <th><h4 class="center_cell">Used Feature</h4></th>
+    </tr>
+    <tr>
+        <td class="table_delimiter"
+            th:text="${detail.time}"></td>
+        <td class="table_delimiter"
+            th:text="${detail.betText}"></td>
+        <td class="table_delimiter"
+            th:text="${detail.totalWinText}"></td>
+        <td class="table_delimiter"
+            th:text="${detail.profitText}"></td>
+        <td class="table_delimiter"
+            th:text="${detail.balanceBeforeText}"></td>
+        <td class="table_delimiter"
+            th:text="${detail.balanceAfterText}"></td>
+        <td class="table_delimiter"
+            th:text="${detail.currency}"></td>
+        <td class="table_delimiter">
+            <span th:text="${detail.usedFeature ? 'Bonus buy' : 'No'}"></span>
+        </td>
+    </tr>
+    <tr>
+        <td colspan="8" class="round_view">
+            <div class="round_details">
+                <div class="slots_spin">
+                    <div class="slots_outcome columns-3 rows-3">
+                        <div th:each="symbol : ${detail.symbols}"
+                             th:class="'gift_rush-' + ${symbol}"
+                             th:style="|background-image: url(/${@environment.getProperty('game.proxy_path')}/img/gift_rush-359074ebf651dec07a53d82b8f704c31bfaab109cc8431a0c81177a9dbde897c.png);|">
+                        </div>
+
+                    </div>
+                    <div class="bets">
+                        <br>
+                        <strong>Total Bet</strong>
+                        <th:block th:text="${detail.betText}"></th:block>
+                        <th:block th:if="${detail.totalWin != null and detail.totalWin > 0}">
+                            <br>
+                            <strong>Total Win</strong>
+                            <th:block th:text="${detail.totalWinText}"></th:block>
+                        </th:block>
+                        <th:block th:if="${detail.isUsedFeature()}">
+                            <br>
+                            <strong>Feature</strong>
+                            Bonus buy
+                            <br>
+                            Initial Bet
+                            <th:block th:text="${detail.stake}"></th:block>
+                            <p>
+                                <strong>Bonus Multiplier</strong>
+                                <th:block th:text="${detail.getBonusMultiplier()}"></th:block>
+                            </p>
+                        </th:block>
+                    </div>
+                    <div class="payouts">
+                        <th:block th:if="${not #lists.isEmpty(detail.winLines) || detail.scatterWin != null}">
+                            <th:block  th:if="${!#lists.isEmpty(detail.winLines)}">
+                                Win lines
+                            </th:block>
+                            <th:block  th:if="${detail.scatterWin != null}">
+                                No won lines
+                            </th:block>
+                            <ul>
+                                <th:block  th:if="${not #lists.isEmpty(detail.winLines)}">
+                                    <li th:each="line : ${detail.winLines}">
+                                        <th:block th:text="${line}"></th:block>
+                                    </li>
+                                </th:block>
+                            </ul>
+                            <ul th:if="${detail.scatterWin != null}">
+                                <li>
+                                    <th:block th:text="${detail.scatterWin}"></th:block>
+                                </li>
+                            </ul>
+                        </th:block>
+                    </div>
+                </div>
+            </div>
+        </td>
+    </tr>
+    </tbody>
+</table>
+</body>
+</html>

@@ -1,0 +1,9 @@
+rotary: 3
+rotaryNum: 3
+prizePro: 0.11
+freePro: 0.008
+diamondSymbolPro:
+  - 0.3
+  - 0.1
+baseBet: 5
+bonusBuy: 400

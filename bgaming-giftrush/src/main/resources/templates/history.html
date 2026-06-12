@@ -1,0 +1,60 @@
+<html lang="en">
+<head>
+    <link rel="stylesheet"
+          th:href="@{/{path}/css/active_admin.css(path=${@environment.getProperty('game.proxy_path')})}"/>
+    <link rel="stylesheet"
+          th:href="@{/{path}/css/application.css(path=${@environment.getProperty('game.proxy_path')})}"/>
+    <title></title>
+</head>
+<body>
+<h2 class='history_header'
+    th:text="${gameName} + ': Games History'">
+</h2>
+<table border='1'
+       class='history_table'
+       id='games_history'>
+    <tbody>
+    <tr>
+        <th><h4 class='center_cell'>Date/Time</h4></th>
+        <th><h4 class='center_cell'>Bet</h4></th>
+        <th><h4 class='center_cell'>Total Win</h4></th>
+        <th><h4 class='center_cell'>Profit</h4></th>
+        <th><h4 class='center_cell'>Balance Before</h4></th>
+        <th><h4 class='center_cell'>Balance after</h4></th>
+        <th><h4 class='center_cell'>Currency</h4></th>
+        <th><h4 class='center_cell'>Round Details</h4></th>
+    </tr>
+    <tr th:each="item:${histories}">
+        <td class='table_delimiter'
+            th:text="${item.dateTime}">
+        </td>
+        <td class='table_delimiter'
+            th:text="${item.bet}">
+        </td>
+        <td class='table_delimiter'
+            th:text="${item.totalWin}">
+        </td>
+        <td class='table_delimiter'
+            th:text="${item.profit}">
+        </td>
+        <td class='table_delimiter'
+            th:text="${item.balanceBefore}">
+        </td>
+        <td class='table_delimiter'
+            th:text="${item.balanceAfter}">
+        </td>
+        <td class='table_delimiter'
+            th:text="${item.currency}">
+        </td>
+        <td class='table_delimiter'>
+            <a target="_blank"
+               th:href="@{/{path}/api/rounds_history/-/{token}
+   (token=${item.token},path=${@environment.getProperty('game.proxy_path')})}">
+                Round Link
+            </a>
+        </td>
+    </tr>
+    </tbody>
+</table>
+</body>
+</html>

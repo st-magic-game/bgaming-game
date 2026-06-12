@@ -1,0 +1,47 @@
+symbols:
+  - index: 0
+    multiplier: 300
+    type: 0
+    weight: 0.1
+    name: "h1"
+  - index: 1
+    multiplier: 200
+    type: 0
+    weight: 0.2
+    name: "h2"
+  - index: 2
+    multiplier: 40
+    type: 0
+    weight: 0.3
+    name: "l1"
+  - index: 3
+    multiplier: 20
+    type: 0
+    weight: 0.4
+    name: "l2"
+  - index: 4
+    multiplier: 20
+    type: 0
+    weight: 0.5
+    name: "l3"
+  - index: 5
+    multiplier: 20
+    type: 0
+    weight: 0.6
+    name: "l4"
+  - index: 6
+    multiplier: 20
+    type: 0
+    weight: 0.8
+    name: "l5"
+  - index: 7
+    multiplier: 5
+    type: 0
+    weight: 1
+    name: "l6"
+  - index: 8
+    multiplier: 0
+    type: 1
+    weight: 1
+    name: "bonus"
+

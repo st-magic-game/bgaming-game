@@ -17,6 +17,7 @@
 
     <modules>
         <module>bgaming-totallyhot</module>
+        <module>bgaming-giftrush</module>
     </modules>
 
     <properties>
