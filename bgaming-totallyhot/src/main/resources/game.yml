@@ -1,2 +1,4 @@
 tableSink: com.bgaming.totallyhot.logic.GameTable
 timeout: 900000
+realGameId: 2773061
+gamePath: TotallyHot

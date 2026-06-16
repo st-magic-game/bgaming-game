@@ -22,7 +22,5 @@ back:
   gameId: 3040
 game:
   signKey: acc4de5de734402cb56e7bc0ed1a430b
-  gamePath: TotallyHot
-  realGameId: 2773061
   proxy_path: totallyhot
 debug: true
