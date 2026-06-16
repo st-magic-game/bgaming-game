@@ -10,6 +10,7 @@ import com.bgaming.candymonsta.entity.dto.GameFeatures;
 import com.bgaming.candymonsta.entity.dto.OutCome;
 import com.bgaming.candymonsta.entity.dto.RoundDetailDto;
 import com.bgaming.candymonsta.entity.dto.SpinResponse;
+import com.bgaming.candymonsta.utils.DateTimeUtil;
 import com.game.base.common.constant.GameKey;
 import com.game.base.common.util.DecimalUtil;
 import com.game.base.common.util.RandomUtil;
@@ -214,7 +215,7 @@ public class GameTable extends TableSink {
         int[][] rotary = scene.getRotary();
         List<PrizeIcon> prizeDetail = scene.getPrizeDetail();
         RoundDetailDto roundDetailDto = new RoundDetailDto();
-        roundDetailDto.setTime(new Timestamp(TimeUtil.getNow()).toLocalDateTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) + " UTC+00:00");
+        roundDetailDto.setTime(DateTimeUtil.parseDateTime(new Timestamp(TimeUtil.getNow()).toLocalDateTime()));
         roundDetailDto.setUsedFeature(false);
         BigDecimal realBet = DecimalUtil.getBigDecimal2(scene.getBetScore());
         BigDecimal realWin = DecimalUtil.getBigDecimal2(scene.getGold());

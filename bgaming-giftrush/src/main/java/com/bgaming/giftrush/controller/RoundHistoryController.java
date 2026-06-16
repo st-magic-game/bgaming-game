@@ -3,6 +3,7 @@ package com.bgaming.giftrush.controller;
 import com.alibaba.fastjson.JSONObject;
 import com.bgaming.giftrush.entity.log.RoundDetailDto;
 import com.bgaming.giftrush.entity.log.RoundHistoryDto;
+import com.bgaming.giftrush.utils.DateTimeUtil;
 import com.bgaming.giftrush.utils.JwtUtil;
 import com.game.base.application.service.GameService;
 import com.game.base.common.util.TimeUtil;
@@ -21,7 +22,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 
 import javax.servlet.http.HttpServletRequest;
 import java.net.URL;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
@@ -62,9 +65,7 @@ public class RoundHistoryController {
                 for (OrderRecord orderRecord : betList) {
                     String recordToken = generateToken(orderRecord, userId);
                     RoundHistoryDto history = RoundHistoryDto.builder()
-                            .dateTime(orderRecord.getOrderTime().format(
-                                    DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
-                                    + " UTC+00:00")
+                            .dateTime(DateTimeUtil.parseDateTime(orderRecord.getOrderTime()))
                             .bet(orderRecord.getStake().toPlainString())
                             .totalWin(orderRecord.getPayout().toPlainString())
                             .profit(orderRecord.getWinLose().toPlainString())

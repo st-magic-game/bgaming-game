@@ -3,6 +3,7 @@ package com.bgaming.totallyhot.controller;
 import com.alibaba.fastjson.JSONObject;
 import com.bgaming.totallyhot.entity.dto.RoundDetailDto;
 import com.bgaming.totallyhot.entity.dto.RoundHistoryDto;
+import com.bgaming.totallyhot.utils.DateTimeUtil;
 import com.bgaming.totallyhot.utils.JwtUtil;
 import com.game.base.application.service.GameService;
 import com.game.base.common.util.TimeUtil;
@@ -20,7 +21,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 import javax.servlet.http.HttpServletRequest;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
@@ -59,9 +62,7 @@ public class RoundHistoryController {
                 for (OrderRecord orderRecord : betList) {
                     String recordToken = generateToken(orderRecord, userId);
                     RoundHistoryDto history = RoundHistoryDto.builder()
-                            .dateTime(orderRecord.getOrderTime().format(
-                                    DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
-                                    + " UTC+00:00")
+                            .dateTime(DateTimeUtil.parseDateTime(orderRecord.getOrderTime()))
                             .bet(orderRecord.getStake().toPlainString())
                             .totalWin(orderRecord.getPayout().stripTrailingZeros().toPlainString())
                             .profit(orderRecord.getWinLose().stripTrailingZeros().toPlainString())

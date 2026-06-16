@@ -3,6 +3,7 @@ package com.bgaming.candymonsta.controller;
 import com.alibaba.fastjson.JSONObject;
 import com.bgaming.candymonsta.entity.dto.RoundDetailDto;
 import com.bgaming.candymonsta.entity.dto.RoundHistoryDto;
+import com.bgaming.candymonsta.utils.DateTimeUtil;
 import com.bgaming.candymonsta.utils.JwtUtil;
 import com.game.base.application.service.GameService;
 import com.game.base.common.util.TimeUtil;
@@ -12,6 +13,7 @@ import com.game.base.infrastructure.persistence.entity.User;
 import com.game.base.infrastructure.persistence.mapper.UserMapper;
 import io.jsonwebtoken.Claims;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -21,7 +23,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 
 import javax.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
@@ -61,9 +65,7 @@ public class RoundHistoryController {
                 for (OrderRecord orderRecord : betList) {
                     String recordToken = generateToken(orderRecord, userId);
                     RoundHistoryDto history = RoundHistoryDto.builder()
-                            .dateTime(orderRecord.getOrderTime().format(
-                                    DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
-                                    + " UTC+00:00")
+                            .dateTime(DateTimeUtil.parseDateTime(orderRecord.getOrderTime()))
                             .bet(orderRecord.getStake().stripTrailingZeros().toPlainString())
                             .totalWin(orderRecord.getPayout().stripTrailingZeros().toPlainString())
                             .profit(orderRecord.getWinLose().stripTrailingZeros().toPlainString())

@@ -9,6 +9,7 @@ import com.bgaming.giftrush.entity.PayLines;
 import com.bgaming.giftrush.entity.Symbol;
 import com.bgaming.giftrush.entity.client.*;
 import com.bgaming.giftrush.entity.log.RoundDetailDto;
+import com.bgaming.giftrush.utils.DateTimeUtil;
 import com.game.base.common.util.DecimalUtil;
 import com.game.base.common.util.JsonUtil;
 import com.game.base.common.util.RandomUtil;
@@ -288,7 +289,7 @@ public class GiftRushContext {
         List<List<Integer>> screen = clientResult.getOutcome().getScreen();
 
         RoundDetailDto roundDetailDto = new RoundDetailDto();
-        roundDetailDto.setTime(new Timestamp(TimeUtil.getNow()).toLocalDateTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) + " UTC+00:00");
+        roundDetailDto.setTime(DateTimeUtil.parseDateTime(new Timestamp(TimeUtil.getNow()).toLocalDateTime()));
         roundDetailDto.setUsedFeature(clientResult.getFlow().getPurchased_feature() instanceof BuyBonus);
         BigDecimal realBet = DecimalUtil.getBigDecimal2(betScore);
         BigDecimal realWin = DecimalUtil.getBigDecimal2(clientResult.getOutcome().getWin().doubleValue() / SUB_UNITS);

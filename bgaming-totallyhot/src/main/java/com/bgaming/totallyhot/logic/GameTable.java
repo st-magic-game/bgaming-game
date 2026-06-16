@@ -9,6 +9,7 @@ import com.bgaming.totallyhot.entity.Scene;
 import com.bgaming.totallyhot.entity.dto.OutCome;
 import com.bgaming.totallyhot.entity.dto.RoundDetailDto;
 import com.bgaming.totallyhot.entity.dto.SpinResponse;
+import com.bgaming.totallyhot.utils.DateTimeUtil;
 import com.game.base.common.constant.GameKey;
 import com.game.base.common.util.DecimalUtil;
 import com.game.base.common.util.RandomUtil;
@@ -124,7 +125,7 @@ public class GameTable extends TableSink {
         int[][] rotary = scene.getRotary();
         List<PrizeIcon> prizeDetail = scene.getPrizeDetail();
         RoundDetailDto roundDetailDto = new RoundDetailDto();
-        roundDetailDto.setTime(new Timestamp(TimeUtil.getNow()).toLocalDateTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) + " UTC+00:00");
+        roundDetailDto.setTime(DateTimeUtil.parseDateTime(new Timestamp(TimeUtil.getNow()).toLocalDateTime()));
         roundDetailDto.setUsedFeature(false);
         BigDecimal realBet = DecimalUtil.getBigDecimal2(response.getOutcome().getBet().doubleValue() / SUB_UNITS);
         BigDecimal realWin = DecimalUtil.getBigDecimal2(response.getOutcome().getWin().doubleValue() / SUB_UNITS);
