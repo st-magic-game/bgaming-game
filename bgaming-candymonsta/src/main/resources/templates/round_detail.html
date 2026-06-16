@@ -1,0 +1,109 @@
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <link rel="stylesheet"
+          th:href="${clientBase} + 'static/css/active_admin.css'"/>
+    <link rel="stylesheet"
+          th:href="${clientBase} + 'static/css/application.css'"/>
+    <title></title>
+</head>
+<body>
+
+<h2 class="history_header">
+    Candy Monsta: Round Details
+</h2>
+
+<table border="1"
+       class="history_table"
+       id="games_history">
+    <tbody>
+    <tr>
+        <th><h4 class="center_cell">Date/Time</h4></th>
+        <th><h4 class="center_cell">Bet</h4></th>
+        <th><h4 class="center_cell">Total Win</h4></th>
+        <th><h4 class="center_cell">Profit</h4></th>
+        <th><h4 class="center_cell">Balance Before</h4></th>
+        <th><h4 class="center_cell">Balance after</h4></th>
+        <th><h4 class="center_cell">Currency</h4></th>
+        <th><h4 class="center_cell">Used Feature</h4></th>
+    </tr>
+    <tr>
+        <td class="table_delimiter"
+            th:text="${detail.time}"></td>
+        <td class="table_delimiter"
+            th:text="${detail.betText}"></td>
+        <td class="table_delimiter"
+            th:text="${detail.totalWinText}"></td>
+        <td class="table_delimiter"
+            th:text="${detail.profitText}"></td>
+        <td class="table_delimiter"
+            th:text="${detail.balanceBeforeText}"></td>
+        <td class="table_delimiter"
+            th:text="${detail.balanceAfterText}"></td>
+        <td class="table_delimiter"
+            th:text="${detail.currency}"></td>
+        <td class="table_delimiter">
+            <span th:text="${detail.usedFeature ? 'Yes' : 'No'}"></span>
+        </td>
+    </tr>
+    <tr>
+        <td colspan="8" class="round_view">
+            <div th:if="${#lists.isEmpty(details)}">
+                No round details
+            </div>
+            <div th:each="detail : ${details}" class="round_details">
+                <div class="slots_spin">
+                    <div class="slots_outcome columns-5 rows-3">
+                        <div th:each="symbol : ${detail.symbols}"
+                             th:class="'candy_monsta-' + ${symbol}">
+                        </div>
+                    </div>
+                    <div class="bets">
+                        <strong th:if="${detail.type != null and detail.type > 0}">
+                            Freespins
+                            <br>
+                        </strong>
+                        Total Bet
+                        <th:block th:text="${detail.betText}"></th:block>
+
+                        <th:block th:if="${detail.totalWin != null and detail.totalWin > 0}">
+                            <br>
+                            Total Win
+                            <th:block th:text="${detail.totalWinText}"></th:block>
+                        </th:block>
+                    </div>
+                    <div class="payout">
+                        <!-- 连线中奖 -->
+                        <th:block th:if="${not #lists.isEmpty(detail.winLines)}">
+                            Win lines
+                            <ul>
+                                <li th:each="line : ${detail.winLines}">
+                                    <div class="flex-display">
+                                        [[${line[0]}]]
+                                        <div class="small-symbol">
+                                            <div th:class="'candy_monsta-' + ${line[1]}"></div>
+                                        </div>
+                                        [[${line[2]}]]
+                                    </div>
+                                </li>
+                            </ul>
+                        </th:block>
+                        <!-- 只有scatter中奖 -->
+                        <th:block th:if="${#lists.isEmpty(detail.winLines)
+                      and detail.scatterWin != null
+                      and detail.scatterWin > 0}">
+                            No won lines
+                            <ul>
+                                <li>
+                                    Scatter [[${detail.scatterWinText}]]
+                                </li>
+                            </ul>
+                        </th:block>
+                    </div>
+                </div>
+            </div>
+        </td>
+    </tr>
+    </tbody>
+</table>
+</body>
+</html>

@@ -1,0 +1,2 @@
+tableSink: com.bgaming.candymonsta.logic.GameTable
+timeout: 1800000

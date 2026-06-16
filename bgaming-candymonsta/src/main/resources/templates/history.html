@@ -1,0 +1,71 @@
+<html lang="en">
+<head>
+    <link rel="stylesheet"
+          th:href="${clientBase} + 'static/css/active_admin.css'"/>
+    <link rel="stylesheet"
+          th:href="${clientBase} + 'static/css/application.css'"/>
+    <title></title>
+    <script>
+        const apiPrefix = '/api/';
+        const proxyBase = window.location.origin
+            + window.location.pathname.substring(0, window.location.pathname.indexOf(apiPrefix));
+    </script>
+</head>
+<body>
+<h2 class='history_header'
+    th:text="${gameName} + ': Games History'">
+</h2>
+<table border='1'
+       class='history_table'
+       id='games_history'>
+    <tbody>
+    <tr>
+        <th><h4 class='center_cell'>Date/Time</h4></th>
+        <th><h4 class='center_cell'>Bet</h4></th>
+        <th><h4 class='center_cell'>Total Win</h4></th>
+        <th><h4 class='center_cell'>Profit</h4></th>
+        <th><h4 class='center_cell'>Balance Before</h4></th>
+        <th><h4 class='center_cell'>Balance after</h4></th>
+        <th><h4 class='center_cell'>Currency</h4></th>
+        <th><h4 class='center_cell'>Round Details</h4></th>
+    </tr>
+    <tr th:each="item:${histories}">
+        <td class='table_delimiter'
+            th:text="${item.dateTime}">
+        </td>
+        <td class='table_delimiter'
+            th:text="${item.bet}">
+        </td>
+        <td class='table_delimiter'
+            th:text="${item.totalWin}">
+        </td>
+        <td class='table_delimiter'
+            th:text="${item.profit}">
+        </td>
+        <td class='table_delimiter'
+            th:text="${item.balanceBefore}">
+        </td>
+        <td class='table_delimiter'
+            th:text="${item.balanceAfter}">
+        </td>
+        <td class='table_delimiter'
+            th:text="${item.currency}">
+        </td>
+        <td class='table_delimiter'>
+            <a th:href="'javascript:void(0)'"
+               th:attr="data-token=${item.token}"
+               onclick="openRoundLink(this)">
+                Round Link
+            </a>
+        </td>
+    </tr>
+    <script>
+        function openRoundLink(el) {
+            const token = el.getAttribute('data-token');
+            window.open(proxyBase + '/api/rounds_history/-/' + token);
+        }
+    </script>
+    </tbody>
+</table>
+</body>
+</html>
