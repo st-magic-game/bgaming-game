@@ -22,7 +22,3 @@ back:
   gameId: 3041
 game:
   signKey: acc4de5de734402cb56e7bc0ed1a430b
-  gamePath: GiftRush
-  realGameId: 2366939
-  proxy_path: giftrush
-debug: false
