@@ -19,7 +19,7 @@ import static com.bgaming.giftrush.logic.GiftRushContext.generateApiResult;
 public class Application implements ApplicationRunner {
 
     public static void main(String[] args) {
-        log.info("bGaming gift-rush-server:version:20260611");
+        log.info("bGaming gift-rush-server:version:20260616");
         SpringApplication.run(Application.class);
     }
 

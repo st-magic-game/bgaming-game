@@ -9,6 +9,11 @@
     <link rel="stylesheet"
           th:href="${clientBase} + '/static/css/application.css'"/>
     <title></title>
+    <script>
+        const apiPrefix = '/api/';
+        const proxyBase = window.location.origin
+            + window.location.pathname.substring(0, window.location.pathname.indexOf(apiPrefix));
+    </script>
 </head>
 <body>
 <h2 class='history_header'
@@ -52,12 +57,19 @@
         </td>
         <td class='table_delimiter'>
             <a target="_blank"
-               th:href="@{/{path}/api/rounds_history/-/{token}
-   (token=${item.token},path=${@environment.getProperty('game.proxy_path')})}">
+               th:href="'javascript:void(0)'"
+               th:attr="data-token=${item.token}"
+               onclick="openRoundLink(this)">
                 Round Link
             </a>
         </td>
     </tr>
+    <script>
+        function openRoundLink(el) {
+            const token = el.getAttribute('data-token');
+            window.open(proxyBase + '/api/rounds_history/-/' + token);
+        }
+    </script>
     </tbody>
 </table>
 </body>
