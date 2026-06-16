@@ -1,9 +1,9 @@
 <html xmlns:th="http://www.thymeleaf.org" lang="en">
 <head>
     <link rel="stylesheet"
-          th:href="@{/{path}/css/active_admin.css(path=${@environment.getProperty('game.proxy_path')})}"/>
+          th:href="${clientBase} + '/static/css/active_admin.css'"/>
     <link rel="stylesheet"
-          th:href="@{/{path}/css/application.css(path=${@environment.getProperty('game.proxy_path')})}"/>
+          th:href="${clientBase} + '/static/css/application.css'"/>
     <title></title>
 </head>
 <body>
@@ -51,8 +51,7 @@
                 <div class="slots_spin">
                     <div class="slots_outcome columns-5 rows-3">
                         <div th:each="symbol : ${detail.symbols}"
-                             th:class="'totally_hot-' + ${symbol}"
-                             th:style="|background-image: url(/${@environment.getProperty('game.proxy_path')}/img/totally_hot-c6c936a354f79fa1435eb1848d5fd5625dd3402852f6a4bc7063955206ad068c.png);|">
+                             th:class="'totally_hot-' + ${symbol}">
                         </div>
                     </div>
                     <div class="bets">

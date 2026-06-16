@@ -9,7 +9,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class Application {
 
     public static void main(String[] args) {
-        log.info("bGaming totally hot:single-server:version:20260612");
+        log.info("bGaming totally hot:single-server:version:20260616");
         SpringApplication.run(Application.class);
     }
 }

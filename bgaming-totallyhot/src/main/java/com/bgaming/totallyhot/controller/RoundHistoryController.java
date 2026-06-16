@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 
+import javax.servlet.http.HttpServletRequest;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -32,7 +33,7 @@ import static com.game.base.common.constant.Protocol.GAME_SUB_LOG_LIST;
 public class RoundHistoryController {
     private final GameService gameService;
     private final UserMapper userMapper;
-
+    public static String ORIGIN;
     @Autowired
     public RoundHistoryController(GameService gameService, UserMapper userMapper) {
         this.gameService = gameService;
@@ -40,7 +41,7 @@ public class RoundHistoryController {
     }
 
     @GetMapping("/{token}")
-    public String history(@PathVariable String token, Model model) {
+    public String history(@PathVariable String token, Model model, HttpServletRequest request) {
         log.info("receive history token {}", token);
         List<RoundHistoryDto> list = new ArrayList<>();
         try {
@@ -76,6 +77,8 @@ public class RoundHistoryController {
         } catch (Exception e) {
             log.error("token {} , history error:", token, e);
         }
+        ORIGIN = request.getParameter("clientBase");
+        model.addAttribute("clientBase", ORIGIN != null ? ORIGIN : "");
         model.addAttribute("gameName", "Totally Hot");
         model.addAttribute("histories", list);
         return "history";
@@ -106,6 +109,7 @@ public class RoundHistoryController {
         } catch (Exception e) {
             log.error("token {} history detail error:", token, e);
         }
+        model.addAttribute("clientBase", ORIGIN != null ? ORIGIN : "");
         model.addAttribute("detail", detail);
         return "round_detail";
     }
