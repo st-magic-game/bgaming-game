@@ -85,6 +85,9 @@
                                         [[${line[2]}]]
                                     </div>
                                 </li>
+                                <li th:if="${detail.scatterWin != null and detail.scatterWin > 0}">
+                                    Scatter [[${detail.scatterWinText}]]
+                                </li>
                             </ul>
                         </th:block>
                         <!-- 只有scatter中奖 -->

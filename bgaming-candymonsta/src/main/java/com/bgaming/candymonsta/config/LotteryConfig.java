@@ -205,10 +205,10 @@ public class LotteryConfig {
         return 0;
     }
 
-    public static int getScatterSize() {
+    public static int getScatterSize(double fixedValue) {
         double random = RandomUtil.nextDouble();
         for (int i = SCATTER_PRO.length - 1; i >= 0; i--) {
-            if (random > SCATTER_PRO[i]) continue;
+            if (random > SCATTER_PRO[i] * fixedValue) continue;
 
             return i + 1;
         }
