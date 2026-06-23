@@ -1,0 +1,145 @@
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <link rel="stylesheet"
+          th:href="${clientBase} + '/static/css/active_admin.css'"/>
+    <link rel="stylesheet"
+          th:href="${clientBase} + '/static/css/application.css'"/>
+    <title></title>
+</head>
+<body>
+
+<h2 class='history_header'
+    th:text="${gameName} + ': Round Details'">
+</h2>
+
+<table border="1"
+       class="history_table"
+       id="games_history">
+    <tbody>
+    <tr>
+        <th><h4 class="center_cell">Date/Time</h4></th>
+        <th><h4 class="center_cell">Bet</h4></th>
+        <th><h4 class="center_cell">Total Win</h4></th>
+        <th><h4 class="center_cell">Profit</h4></th>
+        <th><h4 class="center_cell">Balance Before</h4></th>
+        <th><h4 class="center_cell">Balance after</h4></th>
+        <th><h4 class="center_cell">Currency</h4></th>
+        <th><h4 class="center_cell">Used Feature</h4></th>
+    </tr>
+    <tr>
+        <td class="table_delimiter"
+            th:text="${detail.time}"></td>
+        <td class="table_delimiter"
+            th:text="${detail.betText}"></td>
+        <td class="table_delimiter"
+            th:text="${detail.totalWinText}"></td>
+        <td class="table_delimiter"
+            th:text="${detail.profitText}"></td>
+        <td class="table_delimiter"
+            th:text="${detail.balanceBeforeText}"></td>
+        <td class="table_delimiter"
+            th:text="${detail.balanceAfterText}"></td>
+        <td class="table_delimiter"
+            th:text="${detail.currency}"></td>
+        <td class="table_delimiter">
+            <span th:text="${detail.featureName}"></span>
+        </td>
+    </tr>
+    <tr>
+        <td colspan="8" class="round_view">
+            <div th:if="${#lists.isEmpty(details)}">
+                No round details
+            </div>
+            <div th:each="detail : ${details}" class="round_details cascade">
+                <div class="slots_spin screen_margin">
+                    <div class="slots_outcome columns-6 rows-5">
+                        <div th:each="symbol : ${detail.symbols}"
+                             th:class="${#strings.startsWith(symbol,'bomb_')}
+                ? 'bonanza_billion-bomb'
+                : 'bonanza_billion-' + ${symbol}">
+                            <th:block th:if="${symbol.startsWith('bomb_')}">
+                                <p class="center_symbol_value_formatter"
+                                   style="margin-left: 80px;"
+                                   th:text="${#strings.substring(symbol, 5)}">
+                                </p>
+                            </th:block>
+                        </div>
+                    </div>
+                    <div class="bets">
+                        <strong th:if="${detail.type != null and detail.type > 0}">
+                            Freespins
+                            <span th:text="${(detail.freeNum != null ? detail.freeNum : 0)
+                                        + ' from ' +
+                                        (detail.totalFreeNum != null ? detail.totalFreeNum : 0)}"></span>
+                            <br>
+                        </strong>
+                        Total Bet
+                        <th:block th:text="${detail.betText}"></th:block>
+                        <br>
+                        <span class="custom-inline-block-hints"
+                              title="The maximum win amount is capped, and if the final outcome exceeds the possible maximum win, the player is awarded winnings in accordance with the maximum win cap."
+                              th:text="${detail.multiple > 1
+                                                 ? 'Total Screen Win ' + detail.multipleWinText
+                                                 : 'Total Screen Win ' + detail.totalWinText}">
+                        </span>
+                        <br>
+                        <th:block th:if="${detail.spin}">
+                            Total Round Win
+                            <th:block th:text="${detail.totalRoundWinText}"></th:block>
+                            <br>
+                        </th:block>
+
+                        <th:block th:if="${not #lists.isEmpty(detail.winLines) or !detail.spin}">
+                            <br>
+                            Current cascade level is:
+                            <th:block th:text="${detail.number}"></th:block>
+                        </th:block>
+
+                        <th:block th:if="${detail.openFreeNum > 0}">
+                            <br>
+                            Issued Freespins
+                            <th:block th:text="${detail.openFreeNum}"></th:block>
+                        </th:block>
+                    </div>
+                    <div class="payout">
+                        <!-- 连线中奖 -->
+                        <th:block th:if="${not #lists.isEmpty(detail.winLines)}">
+                            Win combinations
+                            <ul>
+                                <li th:each="line : ${detail.winLines}">
+                                    <div class="flex-display">
+                                        [[${line[0]}]]
+                                        <div class="small-symbol">
+                                            <div th:class="'bonanza_billion-' + ${line[1]}"></div>
+                                        </div>
+                                        [[${line[2]}]]
+                                    </div>
+                                </li>
+                            </ul>
+                        </th:block>
+                        <th:block th:if="${detail.scatterWin != null
+                      and detail.scatterWin > 0}">
+                            Scatters Win
+                            <li>
+                                [[${detail.scatterWinText}]]
+                            </li>
+                        </th:block>
+                        <th:block th:if="${detail.multiple > 1}">
+                            Multiplier Win
+                            <li>
+                                [[${detail.multipleWinText}]]
+                            </li>
+                            Multiplier [[${detail.multiple}]]
+                        </th:block>
+                        <th:block th:if="${#lists.isEmpty(detail.winLines) and detail.spin and detail.multiple == 1}">
+                            No won combinations
+                        </th:block>
+                    </div>
+                </div>
+            </div>
+        </td>
+    </tr>
+    </tbody>
+</table>
+</body>
+</html>

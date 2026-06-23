@@ -1,0 +1,2 @@
+tableSink: com.bgaming.bonanzabillion.logic.GameTable
+timeout: 900000

@@ -1,0 +1,1162 @@
+package com.bgaming.bonanzabillion.logic;
+
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
+import com.bgaming.bonanzabillion.config.LotteryConfig;
+import com.bgaming.bonanzabillion.entity.PrizeIcon;
+import com.bgaming.bonanzabillion.entity.Scene;
+import com.bgaming.bonanzabillion.entity.WinResult;
+import com.bgaming.bonanzabillion.entity.dto.GameFeatures;
+import com.bgaming.bonanzabillion.entity.dto.OutCome;
+import com.bgaming.bonanzabillion.entity.dto.RoundDetailDto;
+import com.bgaming.bonanzabillion.entity.dto.SpinResponse;
+import com.bgaming.bonanzabillion.utils.DateTimeUtil;
+import com.game.base.common.constant.GameKey;
+import com.game.base.common.util.DecimalUtil;
+import com.game.base.common.util.RandomUtil;
+import com.game.base.common.util.TimeUtil;
+import com.game.base.context.GameContext;
+import com.game.base.domain.game.Table;
+import com.game.base.domain.game.TableSink;
+import com.game.base.domain.player.Player;
+import com.game.base.infrastructure.persistence.entity.GameInfo;
+import com.game.base.interfaces.dto.UsePrize;
+import com.game.base.interfaces.dto.bgaming.BgBalance;
+import com.game.base.interfaces.dto.bgaming.FlowData;
+import lombok.extern.slf4j.Slf4j;
+
+import java.math.BigDecimal;
+import java.sql.Timestamp;
+import java.util.*;
+
+import static com.bgaming.bonanzabillion.config.LotteryConfig.*;
+import static com.game.base.common.constant.GameKey.*;
+import static com.game.base.common.constant.Protocol.*;
+
+@Slf4j
+public class GameTable extends TableSink {
+
+    public GameTable(GameInfo roomInfo, Table table) {
+        super(roomInfo, table);
+    }
+
+    /**
+     * 当局中奖金币
+     */
+    private double totalWinGold;
+
+    public Object startGame(Player player, String data) {
+        try {
+            JSONObject jData = JSONObject.parseObject(data);
+            JSONObject options = jData.getJSONObject(OPTIONS);
+            String command = jData.getString("command");
+            int userId = player.getUserId();
+            int requestType = REQUEST_TYPE_NOR; // 0 普通  1免费  2普通*1.25  3购买
+            Double stake;
+            List<Scene> scenes = getScenes(player);
+            if (command.equals("freespin")) {
+                if (scenes == null || scenes.isEmpty()) {
+                    log.error("userId {} , error request freeSpin1, scene == null", userId);
+                    return null;
+                }
+                stake = scenes.get(0).getBetScoreServer() * SUB_UNITS;
+
+                if (isErrorRequest(scenes, stake)) {
+                    log.error("userId {} , error request freeSpin2, scene == null", userId);
+                    return null;
+                }
+                requestType = REQUEST_TYPE_FREE;
+            } else {
+                if(inFreeGame(scenes)){
+                    log.error("userId {} , in freeSpin, not allowed nor spin", userId);
+                    return null;
+                }
+                stake = options.getDouble(BET);
+                if (options.containsKey(PURCHASED_FEATURE)) {
+                    String purchasedFeature = options.getString(PURCHASED_FEATURE);
+                    if (purchasedFeature.equals(PURCHASED_FREE_SPIN_BUY)) {
+                        requestType = REQUEST_TYPE_BUY_FREE;
+                    }
+                    if (purchasedFeature.equals(PURCHASED_FREE_SPIN_CHANCE)) {
+                        requestType = REQUEST_TYPE_CHANCEX2;
+                    }
+                }
+            }
+            if (environmentCheck(player, userId)) return null;
+
+            stake = DecimalUtil.getBigDecimal2(stake).doubleValue();
+            if (cheatingDetection(player, stake)) return null;
+
+            double orderStake = DecimalUtil.getBigDecimal2(stake * BET_TYPE_MUL[requestType] / SUB_UNITS).doubleValue();
+            double beforeScore = player.getUser().getScore();
+            if (requestType != REQUEST_TYPE_FREE && notEnoughGold(orderStake, beforeScore)) {
+                log.info("玩家{} 余额不足,下注失败, score {} , betScore {} orderStake {}", player.getUser().getUserID(), beforeScore, stake, orderStake);
+                return null;
+            }
+
+            if (!checkBetScore(player, stake)) {
+                log.error("玩家{}下注分数异常, betScore {} , buyFree {} ", player.getUser().getUserID(), stake, orderStake);
+                return null;
+            }
+
+            stake = DecimalUtil.getBigDecimal2(stake / SUB_UNITS).doubleValue();
+            if (requestType == REQUEST_TYPE_FREE) {
+                orderStake = 0;
+            }
+            this.lastStartTime = TimeUtil.getNow();
+            player.getExtendJson().put(BET_MUL, 1);
+            player.getExtendJson().put(LotteryConfig.REQUEST_TYPE, requestType);
+            double factor = GameContext.nextDouble(player, stake);
+            double winGold;
+            int recount = 0;
+            do {
+                if (scenes != null && !scenes.isEmpty()) {
+                    player.getExtendJson().put(SCENE, new ArrayList<>(scenes));
+                }
+                this.totalWinGold = 0;
+                if (recount++ > 3) {
+                    factor = 0.02;
+                }
+                this.codeResultData(player, stake, factor);
+                winGold = this.getWinGold();
+            } while (winGold - orderStake > 0 && reset(stake, winGold, player, 10, 300, 3, 100));
+
+            player.getUser().setBankScore(stake);
+            GameContext.newGold(player, stake, orderStake, winGold);
+            if (orderStake > player.getUser().getScore()) {
+                orderStake = player.getUser().getScore();
+            }
+            scenes = getScenes(player);
+            double changeScore = winGold - orderStake;
+            setControlScore(player, changeScore);
+            setCurData(player, orderStake, winGold);
+            resetPlayerExt(player);
+            Scene scene = scenes.get(scenes.size() - 1);
+            scene.setBetScore(DecimalUtil.getBigDecimal2(orderStake).doubleValue());
+            scene.setBetScoreServer(DecimalUtil.getBigDecimal2(stake).doubleValue());
+            String pOrder = player.getUser().getUserID() + "-" + TimeUtil.getNow();
+            scene.setBeforeScore(DecimalUtil.getBigDecimal2(beforeScore).doubleValue());
+            if (scenes.size() > 1) {
+                pOrder = scenes.get(0).getPOrder();
+                String order = scenes.get(0).getOrder();
+                int number = scenes.get(scenes.size() - 2).getNumber();
+                scene.setOrder(order);
+                scene.setNumber(number + 1);
+                scene.setAfterScore(DecimalUtil.getBigDecimal2(player.getUser().getScore()).doubleValue());
+            } else {
+                scene.setAfterScore(DecimalUtil.getBigDecimal2(beforeScore - orderStake).doubleValue());
+                scene.setBetType(requestType);
+            }
+            player.getExtendJson().put("pOrder", pOrder);
+            scene.setPOrder(pOrder);
+
+            boolean finish = (scene.getType() == 0 && scene.getOpenFreeNum() == 0)
+                    || (scene.getType() == 1 && scene.getFreeNum() == 1 && scene.getOpenFreeNum() == 0);
+            JSONObject extendData = getExtendString(player, scene.getPOrder());
+            extendData.put(FREE_TYPE, scene.getFreeType());
+            extendData.put(BUY_TYPE, scene.getFreeType());
+            extendData.put(BET_TYPE, requestType);
+            SpinResponse response = generateResponse(scenes, finish ? DecimalUtil.getBigDecimal2(player.getUser().getScore()).doubleValue() : DecimalUtil.getBigDecimal2(scenes.get(0).getAfterScore()).doubleValue());
+            List<RoundDetailDto> roundDetailDtos = new ArrayList<>();
+            if (finish) {
+                for (Scene tmpScene : scenes) {
+                    List<RoundDetailDto> roundDetailDtoList = generateRoundDetail(tmpScene.getBeforeScore(), player, tmpScene);
+                    roundDetailDtos.addAll(roundDetailDtoList);
+                }
+            } else {
+                List<RoundDetailDto> roundDetailDtoList = generateRoundDetail(beforeScore, player, scene);
+                roundDetailDtos.addAll(roundDetailDtoList);
+            }
+            sendServerMsg(player, beforeScore, orderStake, winGold, roundDetailDtos, extendData, finish, scene.getNumber());
+            player.getExtendJson().put("spinResponse", response);
+            if (finish) {
+                player.getExtendJson().remove(SCENE);
+                player.getExtendJson().remove("spinResponse");
+            }
+            log.info("玩家 {}  数据 result {}", player.getUserId(), response);
+            return response;
+        } catch (Exception var24) {
+            log.error("userId {} , 开奖报错: ", player.getUser().getUserID(), var24);
+        }
+        return null;
+    }
+
+    private boolean inFreeGame(List<Scene> scenes) {
+        if(scenes == null || scenes.isEmpty()) return false;
+
+        Scene scene = scenes.get(scenes.size() - 1);
+        if(scene.getFreeNum() > 1 || scene.getOpenFreeNum() > 0) return true;
+
+        return false;
+    }
+
+    private static boolean isErrorRequest(List<Scene> scenes, Double stake) {
+        boolean errorRequest = false;
+        Scene lastScene = scenes.get(scenes.size() - 1);
+        if (lastScene.getBetScoreServer() != DecimalUtil.getBigDecimal2(stake / SUB_UNITS).doubleValue()) {
+            errorRequest = true;
+        }
+        if (lastScene.getType() == 0) {
+            if (lastScene.getOpenFreeNum() == 0) {
+                errorRequest = true;
+            }
+        } else {
+            if (lastScene.getFreeNum() == 0 && lastScene.getOpenFreeNum() == 0) {
+                errorRequest = true;
+            }
+        }
+        return errorRequest;
+    }
+
+    private List<RoundDetailDto> generateRoundDetail(double beforeScore, Player player, Scene scene) {
+        List<RoundDetailDto> roundDetailDtoList = new ArrayList<>();
+        List<List<PrizeIcon>> prizeDetails = scene.getPrizeDetailList();
+        boolean spin = true;
+        for (int i = 0; i < scene.getStorage().getSaved_screens().size(); i++) {
+            List<PrizeIcon> prizeDetail = new ArrayList<>();
+            if (prizeDetails.size() > i) {
+                prizeDetail = prizeDetails.get(i);
+            }
+            RoundDetailDto roundDetailDto = new RoundDetailDto();
+            if (spin) {
+                roundDetailDto.setSpin(spin);
+                spin = false;
+            }
+            roundDetailDto.setTime(DateTimeUtil.parseDateTime(new Timestamp(TimeUtil.getNow()).toLocalDateTime()));
+            roundDetailDto.setNumber(i + 1);
+            roundDetailDto.setTotalFreeNum(scene.getTotalFreeNum());
+            roundDetailDto.setFreeNum(scene.getTotalFreeNum() - scene.getFreeNum() + 1);
+            roundDetailDto.setUsedFeature(scene.getBetType() == REQUEST_TYPE_BUY_FREE);
+            roundDetailDto.setFeatureName(featureNameByBetType(scene.getBetType()));
+            BigDecimal realBet = DecimalUtil.getBigDecimal2(scene.getBetScore());
+            BigDecimal realWin = BigDecimal.ZERO;
+            Optional<BigDecimal> reduce = prizeDetail.stream().map(PrizeIcon::getGold).reduce(BigDecimal::add);
+            if (reduce.isPresent()) {
+                realWin = reduce.get();
+            }
+            BigDecimal realProfit = DecimalUtil.getBigDecimal2(scene.getGold() - scene.getBetScore());
+            roundDetailDto.setTotalRoundWinText(DecimalUtil.getBigDecimal2(scene.getGold() / scene.getDoubleMul()).stripTrailingZeros().toPlainString());
+            roundDetailDto.setBetText(betScoreText(scene));
+            roundDetailDto.setOpenFreeNum(scene.getOpenFreeNum());
+            roundDetailDto.setBet(realBet);
+            roundDetailDto.setType(scene.getType());
+            roundDetailDto.setTotalWinText(realWin.stripTrailingZeros().toPlainString());
+            roundDetailDto.setTotalWin(realWin);
+            roundDetailDto.setProfitText(realProfit.stripTrailingZeros().toPlainString());
+            roundDetailDto.setProfit(realProfit);
+            roundDetailDto.setCurrency(player.getCoinsType());
+            roundDetailDto.setBalanceBeforeText(DecimalUtil.getBigDecimal2(beforeScore).stripTrailingZeros().toPlainString());
+            roundDetailDto.setBalanceBefore(DecimalUtil.getBigDecimal2(beforeScore));
+            roundDetailDto.setBalanceAfterText(DecimalUtil.getBigDecimal2(player.getUser().getScore()).stripTrailingZeros().toPlainString());
+            roundDetailDto.setBalanceAfter(DecimalUtil.getBigDecimal2(player.getUser().getScore()));
+            roundDetailDto.setWinLines(castDetailWinLine(prizeDetail));
+            if (i == scene.getStorage().getSaved_screens().size() - 1) {
+                roundDetailDto.setMultiple(scene.getDoubleMul());
+                if (scene.getScatterWin() != null && scene.getScatterWin().doubleValue() > 0) {
+                    roundDetailDto.setScatterWin(scene.getScatterWin());
+                    roundDetailDto.setScatterWinText(scene.getScatterWin().stripTrailingZeros().toPlainString());
+                }
+                String multiWinText = "0";
+                if (scene.getDoubleMul() > 1) {
+                    multiWinText = DecimalUtil.getBigDecimal2(scene.getGold() * (scene.getDoubleMul() - 1) / scene.getDoubleMul()).stripTrailingZeros().toPlainString();
+                }
+                roundDetailDto.setMultipleWinText(multiWinText);
+            }
+            roundDetailDto.setSymbols(castDetailSymbol(scene.getTmpRotarys().get(i)));
+            roundDetailDtoList.add(roundDetailDto);
+        }
+
+
+        return roundDetailDtoList;
+    }
+
+    private String betScoreText(Scene scene) {
+        if (scene.getType() == REQUEST_TYPE_FREE) return "0";
+
+        if (scene.getBetType() == REQUEST_TYPE_NOR) {
+            return DecimalUtil.getBigDecimal2(scene.getBetScore()).stripTrailingZeros().toPlainString();
+        }
+
+        if (scene.getBetType() == REQUEST_TYPE_CHANCEX2) {
+            return "1.25 * " + toPlainString(scene.getBetScoreServer()) + " = " + toPlainString(scene.getBetScore());
+        }
+        return "100 * " + toPlainString(scene.getBetScoreServer()) + " = " + toPlainString(scene.getBetScore());
+    }
+
+    private String toPlainString(double betScore) {
+        return DecimalUtil.getBigDecimal2(betScore).stripTrailingZeros().toPlainString();
+    }
+
+    private int[][] rebackRotary(List<List<String>> savedScreen) {
+        int[][] rotary = new int[ROWS][COLUMNS];
+        for (int i = 0; i < savedScreen.size(); i++) {
+            List<String> rowIcons = savedScreen.get(i);
+            for (int i1 = 0; i1 < rowIcons.size(); i1++) {
+                rotary[i1][i] = Integer.parseInt(rowIcons.get(i1));
+            }
+        }
+        return rotary;
+    }
+
+    private String featureNameByBetType(int betType) {
+        if (betType == REQUEST_TYPE_CHANCEX2) return "Freespin chance";
+
+        if (betType == REQUEST_TYPE_BUY_FREE) return "Freespin buy";
+        return "No";
+    }
+
+    private List<List<String>> castDetailWinLine(List<PrizeIcon> prizeDetail) {
+        List<List<String>> result = new ArrayList<>();
+        for (PrizeIcon prizeIcon : prizeDetail) {
+            if (prizeIcon.getIcon() == SCATTER) continue;
+
+            String line = String.valueOf(prizeIcon.getLine()).concat("x");
+            String iconStr = SYMBOL_NAME[prizeIcon.getIcon()];
+            String lineIdEndPos = prizeIcon.getGold().stripTrailingZeros().toPlainString();
+            List<String> winLine = Arrays.asList(line, iconStr, lineIdEndPos);
+            result.add(winLine);
+        }
+        return result;
+    }
+
+    private List<String> castDetailSymbol(int[][] rotary) {
+        List<String> symbols = new ArrayList<>();
+        for (int i = 0; i < ROWS; i++) {
+            for (int i1 = 0; i1 < COLUMNS; i1++) {
+                int icon = rotary[i][i1];
+                String iconStr = SYMBOL_NAME[icon % 100];
+                if (icon > 100) {
+                    iconStr += "_" + icon / 100;
+                }
+                symbols.add(iconStr);
+            }
+        }
+        return symbols;
+    }
+
+    private static final String[] SYMBOL_NAME = {"h1", "h2", "h3", "h4", "l1", "l2", "l3", "l4", "l5", "scatter", "bomb"};
+
+    private void resetPlayerExt(Player player) {
+        player.getExtendJson().remove(LotteryConfig.REQUEST_TYPE);
+        player.getExtendJson().remove(PLAY_TIMES);
+        player.getExtendJson().remove(BET_TYPE);
+    }
+
+    public SpinResponse generateResponse(List<Scene> scenes, double betAfterScore) {
+        Scene scene = scenes.get(scenes.size() - 1);
+        int requestType = scenes.get(0).getBetType();
+        Double totalWin = scenes.stream().map(Scene::getGold).reduce(Double::sum).get();
+        double betScore = scene.getBetScoreServer();
+        String orderId = scene.getOrder();
+        int orderSer = scene.getNumber() + 1;
+        BgBalance balance = new BgBalance();
+        balance.setGame(DecimalUtil.getBigDecimal2(totalWin * SUB_UNITS));
+        balance.setWallet(DecimalUtil.getBigDecimal2(betAfterScore * SUB_UNITS));
+
+        FlowData flowData = this.table.getGameService().initFlowData();
+        List<String> actions = new ArrayList<>();
+        actions.add(BGAMING_COMMAND_INIT);
+        if (scene.getOpenFreeNum() > 0) {
+            flowData.setState(BGAMING_COMMAND_FREE_SPIN);
+            actions.add("freespin");
+        } else {
+            if (scene.getType() == 1) {
+                if (scene.getFreeNum() > 1) {
+                    actions.add("freespin");
+                    flowData.setState(BGAMING_COMMAND_FREE_SPIN);
+                } else {
+                    actions.add(BGAMING_COMMAND_SPIN);
+                    flowData.setState(BGAMING_STATE_CLOSED);
+                }
+            } else {
+                actions.add(BGAMING_COMMAND_SPIN);
+                flowData.setState(BGAMING_STATE_CLOSED);
+            }
+        }
+        String command = scene.getType() == 0 ? BGAMING_COMMAND_SPIN : "freespin";
+        flowData.setAvailable_actions(actions);
+        flowData.setCommand(command);
+        flowData.setRound_id(orderId);
+        flowData.setLast_action_id(orderId + "_" + orderSer);
+        String orderNum = orderId.replaceAll("-", "");
+        String orderN = orderNum.substring(orderNum.length() - 11);
+        long orderLong = Long.parseLong(orderN);
+        JSONObject jsonObject = JSONObject.parseObject(JSONObject.toJSONString(flowData));
+        jsonObject.put("round_id", orderLong);
+        jsonObject.put("last_action_id", orderLong + "_" + orderSer);
+        JSONObject purchasedFeature = new JSONObject();
+        if (requestType == REQUEST_TYPE_BUY_FREE) {
+            purchasedFeature.put("name", PURCHASED_FREE_SPIN_BUY);
+        } else if (requestType == REQUEST_TYPE_CHANCEX2) {
+            purchasedFeature.put("name", PURCHASED_FREE_SPIN_CHANCE);
+        }
+        jsonObject.put(PURCHASED_FEATURE, purchasedFeature);
+        int freeSpinIssued = checkIssued(scene);
+        int freeSpinLeft = checkFreeSpinLeft(scene);
+        GameFeatures gameFeatures = new GameFeatures();
+        gameFeatures.setFreespins_issued(freeSpinIssued);
+        gameFeatures.setFreespins_left(freeSpinLeft);
+
+        OutCome outCome = new OutCome();
+        outCome.setBet(DecimalUtil.getBigDecimal2(betScore * SUB_UNITS));
+        outCome.setWin(DecimalUtil.getBigDecimal2(this.totalWinGold * SUB_UNITS));
+        outCome.setSpecial_symbols(checkSpecialSymbol(scene.getRotary()));
+        outCome.setWins(checkWins(scene.getPrizeDetailList()));
+        outCome.setScreen(castColumnToRow(scene.getRotary()));
+        outCome.setFreespins_issued(scene.getOpenFreeNum());
+        outCome.setStorage(scene.getStorage());
+
+        SpinResponse gameResponse = new SpinResponse();
+        gameResponse.setApi_version(this.table.getGameService().getBaseVersion().getApiVersion());
+        gameResponse.setBalance(balance);
+        gameResponse.setFlow(jsonObject);
+        gameResponse.setOutcome(outCome);
+        gameResponse.setFeatures(gameFeatures);
+        return gameResponse;
+    }
+
+    private int checkFreeSpinLeft(Scene scene) {
+        if (scene.getType() == 1) {
+            return scene.getFreeNum() - 1;
+        }
+        if (scene.getOpenFreeNum() > 0) {
+            return scene.getOpenFreeNum();
+        }
+        return 0;
+    }
+
+    private int checkIssued(Scene scene) {
+        return scene.getType() == 0 ? scene.getOpenFreeNum() : scene.getTotalFreeNum();
+    }
+
+    private List<List<String>> castReel(int[][] rotary) {
+        List<List<String>> screen = new ArrayList<>();
+        for (int i = 0; i < COLUMNS; i++) {
+            int icon1 = rotary[0][i];
+            int icon2 = rotary[1][i];
+            int icon3 = rotary[2][i];
+            List<String> list = new ArrayList<>();
+            list.add(String.valueOf(icon1));
+            list.add(String.valueOf(icon2));
+            list.add(String.valueOf(icon3));
+            screen.add(list);
+        }
+        return screen;
+    }
+
+    private List<List<Object>> checkWins(List<List<PrizeIcon>> prizeDetailList) {
+        List<List<Object>> result = new ArrayList<>();
+        for (int i = 0; i < prizeDetailList.size(); i++) {
+            List<PrizeIcon> prizeDetail = prizeDetailList.get(i);
+            for (PrizeIcon prizeIcon : prizeDetail) {
+                List<Object> win = new ArrayList<>();
+                if (prizeIcon.getIcon() == SCATTER) {
+                    Set<Integer> prizeIndex = prizeIcon.getPrizeIndex();
+                    List<List<Integer>> scatterIndex = new ArrayList<>();
+                    for (Integer index : prizeIndex) {
+                        List<Integer> idx = new ArrayList<>();
+                        idx.add(index % COLUMNS);
+                        idx.add(index / COLUMNS);
+                        scatterIndex.add(idx);
+                    }
+                    win.add("scatter");
+                    win.add(prizeIcon.getGold().multiply(BigDecimal.valueOf(SUB_UNITS)));
+                    win.add(scatterIndex);
+                } else {
+                    win.add("cascade_" + i);
+                    win.add(prizeIcon.getGold().multiply(BigDecimal.valueOf(SUB_UNITS)));
+                    win.add(castColumnIdx(prizeIcon.getPrizeIndex()));
+                    win.add(String.valueOf(prizeIcon.getIcon()));
+                }
+                result.add(win);
+            }
+        }
+        return result;
+    }
+
+    private List<List<Integer>> castColumnIdx(Set<Integer> prizeIndex) {
+        List<List<Integer>> result = new ArrayList<>();
+        for (Integer idx : prizeIndex) {
+            List<Integer> index = new ArrayList<>();
+            index.add(idx % COLUMNS);
+            index.add(idx / COLUMNS);
+            result.add(index);
+        }
+        return result;
+    }
+
+    private JSONObject checkSpecialSymbol(int[][] rotary) {
+        JSONObject result = new JSONObject();
+        List<List<Integer>> scatterIndexes = new ArrayList<>();
+        for (int i = 0; i < ROWS; i++) {
+            for (int i1 = 0; i1 < COLUMNS; i1++) {
+                int icon = rotary[i][i1];
+
+                if (icon == SCATTER) {
+                    List<Integer> index = new ArrayList<>();
+                    index.add(i1);
+                    index.add(i);
+                    scatterIndexes.add(index);
+                }
+            }
+        }
+
+        if (!scatterIndexes.isEmpty()) {
+            Map<Integer, List<List<Integer>>> inner = new HashMap<>();
+            inner.put(SCATTER, scatterIndexes);
+            result.put("scatter", inner);
+        }
+        return result;
+    }
+
+    @Override
+    public void usePrize(Player player, UsePrize usePrize) {
+
+    }
+
+    private void sendServerMsg(Player player, double beforeScore, double betScore, double winGold, List<RoundDetailDto> gameDetail, JSONObject extData, boolean finish, int number) {
+        List<Scene> scenes = getScenes(player);
+        player.initBetId(gameInfo.getRoomID(), scenes.get(0).getOrder());
+        player.setBetIdNum(number);
+        double finishBeforeScore = finish ? gameDetail.get(0).getBalanceBefore().doubleValue() : beforeScore;
+        this.table.getGameService().getRabbitMqService().sendOrder(player, DecimalUtil.getBigDecimal2(finishBeforeScore).doubleValue(), this.gameInfo,
+                betScore, winGold, number, scenes.get(0).getPOrder(), extData, finish ? 1 : 0, false);
+        if (finish) {
+            log.info("userid = {},发送完整注单", player.getUser().getUserID());
+        } else {
+            log.info("userid = {},发送单场注单", player.getUser().getUserID());
+        }
+        sendDataLog(player, gameDetail, finish);
+    }
+
+    private int getRequestType(Player player) {
+        int betType = 0;
+        if (player.getExtendJson().containsKey(LotteryConfig.REQUEST_TYPE)) {
+            betType = player.getExtendJson().getInteger(LotteryConfig.REQUEST_TYPE);
+        }
+        return betType;
+    }
+
+    private boolean environmentCheck(Player player, int userid) {
+        if (checkDSScore(player)) {
+            return true;
+        }
+        if (!isCooling()) {
+            log.info("userid = {},cooling.....", userid);
+            return true;
+        }
+        return false;
+    }
+
+    private static boolean cheatingDetection(Player player, Double stake) {
+        if (stake < 0) {
+            log.error("user {} , 作弊检测篡改数据!!! betScore {}", player.getUser().getUserID(), stake);
+            return true;
+        }
+
+        return false;
+    }
+
+    private boolean notEnoughGold(double betScore, double beforeScore) {
+        return betScore > DecimalUtil.getBigDecimal2(beforeScore).doubleValue();
+    }
+
+    private static List<Scene> getScenes(Player player) {
+        List<Scene> scenes = null;
+        if (player.getExtendJson().containsKey("scene")) {
+            scenes = (List<Scene>) player.getExtendJson().get("scene");
+        }
+        return scenes;
+    }
+
+    /**
+     * 发送es日志
+     *
+     * @param player 当前玩家
+     * @param finish
+     */
+    private void sendDataLog(Player player, Object gameDetail, boolean finish) {
+        List<Scene> scenes = getScenes(player);
+        if (scenes == null) {
+            log.error("发送es日志时，服务器发生错误");
+            return;
+        }
+
+        double settleBet = scenes.get(0).getBetScore();
+        double betScore = scenes.get(0).getBetScoreServer();
+        double gold = this.totalWinGold;
+        String pOrder = scenes.get(0).getPOrder();
+        JSONObject jObj = new JSONObject();
+        jObj.put(ICON_DATA, JSONObject.toJSONString(gameDetail));
+        jObj.put(UUID, TimeUtil.getNow());
+        jObj.put(BET_MUL, player.getEMul());
+        jObj.put(PARENT_ORDER, pOrder);
+        sendLogData(player, DecimalUtil.getBigDecimal2(player.getUser().getScore() - gold + settleBet).doubleValue(), settleBet, gold, pOrder, finish ? 1 : 0, jObj, betScore);
+    }
+
+    /**
+     * 设置注单中的扩展数据
+     *
+     * @param player 当前玩家
+     * @return 扩资数据
+     */
+    private JSONObject getExtendString(Player player, String pOrder) {
+        List<Scene> scenes = getScenes(player);
+        if (scenes == null) {
+            log.error("发送注单时，服务器发生错误");
+            throw new RuntimeException("发送注单数据错误");
+        }
+
+        JSONObject prizeStatistics = this.getPrizeStatistics(scenes, pOrder);
+        prizeStatistics.put("lastOrder", true);
+
+        return prizeStatistics;
+    }
+
+    /**
+     * 历史记录中奖设计
+     */
+    private JSONObject getPrizeStatistics(List<Scene> scenes, String pOrder) {
+        /* 历史记录中奖统计 */
+        JSONObject prizeStatistics = new JSONObject();
+        boolean isFree = scenes.stream().anyMatch(s -> s.getType() == 1);
+        int dropNum = 0;//中免费奖之前掉落次数
+        int freePrize = 0;//免费场中的中奖次数
+        if (isFree) {
+            boolean flag = true;
+            for (Scene scene : scenes) {
+                if (flag && scene.getType() == 0) {
+                    dropNum++;
+                } else {
+                    flag = false;
+                    if (scene.getGold() > 0) {
+                        freePrize++;
+                    }
+                }
+            }
+            dropNum--;
+        } else {
+            dropNum = scenes.size() - 1;
+        }
+        prizeStatistics.put("isFree", isFree);
+        prizeStatistics.put("dropNum", dropNum);
+        prizeStatistics.put("freePrize", freePrize);
+        prizeStatistics.put("pOrder", pOrder);
+
+        return prizeStatistics;
+    }
+
+    private Scene getResultScene(double betScore, double factor, Player player) {
+        long now = TimeUtil.getNow();
+        int type = getRequestType(player);
+        int freeNum = 0;
+        int totalFreeNum = 0;
+        List<Scene> scenes = getScenes(player);
+        if (scenes != null && !scenes.isEmpty()) {
+            Scene scene = scenes.get(scenes.size() - 1);
+            totalFreeNum = scene.getTotalFreeNum();
+            if (scene.getType() == 1) {
+                freeNum = scene.getFreeNum();
+                freeNum--;
+            } else {
+                freeNum = scene.getOpenFreeNum();
+            }
+        }
+        Scene sceneIconVo = generatedScene(betScore, factor, type);
+        checkAndSetFreeInfo(sceneIconVo, betScore);
+        totalFreeNum += sceneIconVo.getOpenFreeNum();
+        freeNum += sceneIconVo.getOpenFreeNum();
+        sceneIconVo.setOrder(nextId(now));
+        sceneIconVo.setFreeNum(freeNum);
+        sceneIconVo.setTotalFreeNum(totalFreeNum);
+        return sceneIconVo;
+    }
+
+    private void checkAndSetFreeInfo(Scene sceneIconVo, double betScore) {
+        int[][] rotary = sceneIconVo.getFinalRotary();
+        List<Integer> scatterIndexes = new ArrayList<>();
+        for (int i = 0; i < ROWS; i++) {
+            for (int i1 = 0; i1 < COLUMNS; i1++) {
+                if (rotary[i][i1] == SCATTER) {
+                    scatterIndexes.add(i * COLUMNS + i1);
+                }
+            }
+        }
+        int bingoSize = sceneIconVo.getType() == 1 ? 3 : 4;
+        if (scatterIndexes.size() >= bingoSize) {
+            PrizeIcon prizeIcon = new PrizeIcon();
+            int mul = getMul(SCATTER, scatterIndexes.size());
+            int openFreeNum = sceneIconVo.getType() == 1 ? FREE_ADD : LotteryConfig.FREE_NUM[scatterIndexes.size() - 4];
+            double scatterWinGold = betScore * mul;
+            prizeIcon.setIcon(SCATTER);
+            prizeIcon.setMul(mul);
+            prizeIcon.setGold(DecimalUtil.getBigDecimal2(scatterWinGold));
+            prizeIcon.setHitLine(-1);
+            prizeIcon.setPrizeIndex(new HashSet<>(scatterIndexes));
+            prizeIcon.setLine(openFreeNum);
+            if (sceneIconVo.getPrizeDetailList().isEmpty()) {
+                sceneIconVo.getPrizeDetailList().add(Collections.singletonList(prizeIcon));
+            } else {
+                sceneIconVo.getPrizeDetailList().get(sceneIconVo.getPrizeDetailList().size() - 1).add(prizeIcon);
+            }
+            sceneIconVo.setGold(DecimalUtil.getBigDecimal2(sceneIconVo.getGold() + scatterWinGold * sceneIconVo.getDoubleMul()).doubleValue());
+            sceneIconVo.getPrizeIndex().addAll(scatterIndexes);
+            sceneIconVo.setOpenFreeNum(openFreeNum);
+            sceneIconVo.setScatterWin(DecimalUtil.getBigDecimal2(scatterWinGold * sceneIconVo.getDoubleMul()));
+        }
+    }
+
+    private static Scene generatedScene(double betScore, double factor, int type) {
+        if(type == 1){
+            factor *= 1.8568;
+        }
+        Scene scene = new Scene();
+        scene.setType(type == REQUEST_TYPE_FREE ? 1 : 0);
+        scene.setDoubleMul(1);
+        int[][] rotary = buildFirstScreen(factor, type, scene);
+        scene.setRotary(copyArr(rotary));
+        scene.setFreeType(type == REQUEST_TYPE_FREE ? 1 : 0);
+        int cascadeIndex = 0;
+        double totalWin = 0;
+        while (true) {
+            WinResult winResult = calculateWin(rotary, betScore);
+            scene.getStorage().getSaved_screens().add(castColumnToRow(rotary));
+            scene.getPrizeDetailList().add(winResult.getPrizeIcons());
+            totalWin += winResult.getWinAmount();
+            if (winResult.getPrizeIcons().isEmpty()) break;
+
+            rotary = buildNextScreen(rotary, winResult.getPrizeIndex(), factor, type, scene, ++cascadeIndex);
+        }
+        handleMultiMultiplier(scene);
+        scene.setFinalRotary(rotary);
+        scene.setGold(DecimalUtil.getBigDecimal2(totalWin * scene.getDoubleMul()).doubleValue());
+        return scene;
+    }
+
+    private static int[][] buildFirstScreen(double factor, int type, Scene scene) {
+        int[][] rotary = getInitRotary();
+        int scatterSize = getScatterSize(type == REQUEST_TYPE_CHANCEX2 ? 1.25 : 1);
+        if (type == REQUEST_TYPE_BUY_FREE) {
+            scatterSize = 4;
+            if (RandomUtil.nextDouble() < 0.1) {
+                scatterSize = 5;
+            }
+        }
+        installScatter(rotary, scatterSize);
+        Map<Integer, Integer> multiIconIndex = new HashMap<>();
+        if (type == 1) {
+            List<Integer> multiIcons = installMultiIcon(rotary, getMultiIconSize());
+            for (Integer idx : multiIcons) {
+                int mul = getMuliIconMul(1);
+                int[] position = {idx % COLUMNS, idx / COLUMNS};
+                scene.getStorage().getBombs().add(Arrays.asList("cascade_" + 0, mul, position));
+                multiIconIndex.put(idx, mul);
+            }
+
+            scene.getMultiIconIndexList().add(multiIconIndex);
+        }
+        fillScreen(rotary, factor, false);
+
+        int[][] tmpRotary = copyArr(rotary);
+        if (!multiIconIndex.isEmpty()) {
+            for (Map.Entry<Integer, Integer> entry : multiIconIndex.entrySet()) {
+                Integer index = entry.getKey();
+                Integer mul = entry.getValue();
+                tmpRotary[index / COLUMNS][index % COLUMNS] = mul * 100 + MULTI_ICON;
+            }
+        }
+        scene.getTmpRotarys().add(tmpRotary);
+        return rotary;
+    }
+
+    private static WinResult calculateWin(int[][] rotary, double betScore) {
+        int[] iconCount = new int[9];
+        Map<Integer, Set<Integer>> prizeIndexMap = new HashMap<>();
+        countIcons(rotary, iconCount, prizeIndexMap);
+        List<PrizeIcon> prizeIcons = new ArrayList<>();
+        Set<Integer> prizeIndex = new HashSet<>();
+        double win = 0;
+        for (int icon = 0; icon < iconCount.length; icon++) {
+            int count = iconCount[icon];
+            if (count < 8) continue;
+
+            PrizeIcon prizeIcon = new PrizeIcon();
+            prizeIcon.setIcon(icon);
+            prizeIcon.setLine(count);
+            int mul = getMul(icon, Math.min(count, 12));
+            BigDecimal lineWin = DecimalUtil.getBigDecimal2(betScore * mul / BASE_LINE);
+            prizeIcon.setMul(mul);
+            prizeIcon.setGold(lineWin);
+            prizeIcon.setPrizeIndex(prizeIndexMap.get(icon));
+            prizeIcons.add(prizeIcon);
+            win += lineWin.doubleValue();
+            prizeIndex.addAll(prizeIcon.getPrizeIndex());
+        }
+        return new WinResult(prizeIcons, prizeIndex, win);
+    }
+
+    private static void countIcons(int[][] rotary, int[] iconCount, Map<Integer, Set<Integer>> prizeIndexMap) {
+        for (int row = 0; row < ROWS; row++) {
+            for (int col = 0; col < COLUMNS; col++) {
+                int icon = rotary[row][col];
+                if (icon < 0 || icon >= SCATTER) continue;
+
+                iconCount[icon]++;
+                prizeIndexMap.computeIfAbsent(icon, k -> new HashSet<>()).add(row * COLUMNS + col);
+            }
+        }
+    }
+
+    private static int[][] buildNextScreen(int[][] rotary, Set<Integer> prizeIndex, double factor, int type, Scene scene, int cascadeIndex) {
+        int[][] next = dropRotary(prizeIndex, rotary);
+        int[][] tmpNext = dropRotary(prizeIndex, scene.getTmpRotarys().get(cascadeIndex - 1));
+        List<Integer> dropMultiIconIndex = checkMultiIconNewIdx(tmpNext);
+        installDropScatter(next);
+        Map<Integer, Integer> multiIconIndex = new HashMap<>();
+        if (type == 1) {
+            List<Integer> multiIcons = installMultiIcon(next, getMultiIconSize());
+            for (Integer idx : multiIcons) {
+                int mul = getMuliIconMul(1);
+                int[] position = {idx % COLUMNS, idx / COLUMNS};
+                multiIconIndex.put(idx, mul);
+                scene.getStorage().getBombs().add(Arrays.asList("cascade_" + cascadeIndex, mul, position));
+            }
+            scene.getMultiIconIndexList().add(multiIconIndex);
+        }
+        fillScreen(next, factor, true);
+        int[][] nextTmpRotary = copyArr(next);
+        for (Integer dropMulIndex : dropMultiIconIndex) {
+            int y = dropMulIndex / COLUMNS;
+            int x = dropMulIndex % COLUMNS;
+            nextTmpRotary[y][x] = tmpNext[y][x];
+        }
+        if (!multiIconIndex.isEmpty()) {
+            for (Map.Entry<Integer, Integer> entry : multiIconIndex.entrySet()) {
+                Integer index = entry.getKey();
+                Integer mul = entry.getValue();
+                nextTmpRotary[index / COLUMNS][index % COLUMNS] = mul * 100 + MULTI_ICON;
+            }
+        }
+        scene.getTmpRotarys().add(nextTmpRotary);
+        return next;
+    }
+
+    private static List<Integer> checkMultiIconNewIdx(int[][] tmpNext) {
+        List<Integer> result = new ArrayList<>();
+        for (int i = 0; i < ROWS; i++) {
+            for (int i1 = 0; i1 < COLUMNS; i1++) {
+                int icon = tmpNext[i][i1];
+                if (icon > 100) {
+                    result.add(i * COLUMNS + i1);
+                }
+            }
+        }
+        return result;
+    }
+
+    private static int[][] dropRotary(Set<Integer> prizeIndex, int[][] rotary) {
+        int[][] dropRotary = getInitRotary();
+        for (int i = 0; i < COLUMNS; i++) {
+            int temp = 0;
+            for (int i1 = ROWS - 1; i1 >= 0; i1--) {
+                int index = i1 * COLUMNS + i;
+                if (prizeIndex.contains(index)) {
+                    temp++;
+                } else {
+                    dropRotary[i1 + temp][i] = rotary[i1][i];
+                }
+            }
+        }
+        return dropRotary;
+    }
+
+    private static void fillScreen(int[][] rotary, double factor, boolean drop) {
+        int[] iconCount = new int[9];
+        Map<Integer, Set<Integer>> map = new HashMap<>();
+        countIcons(rotary, iconCount, map);
+        installRandomIcon(factor, rotary, iconCount, map, drop);
+    }
+
+    private static void installRandomIcon(double factor, int[][] rotary, int[] iconCount, Map<Integer, Set<Integer>> prizeIndexMap, boolean drop) {
+        double tmpRan = factor > 1 ? factor : Math.pow(factor, 3);
+        double tempFactor = drop ? tmpRan : tmpRan * SMALL_WIN_PRO;
+        for (int i = 0; i < COLUMNS; i++) {
+            for (int i1 = 0; i1 < ROWS; i1++) {
+                if (rotary[i1][i] != -1) continue;
+                while (true) {
+                    int icon = getRandomNormalIcon(factor);
+                    if (iconCount[icon] >= 7) {
+                        int line = Math.min(iconCount[icon] + 1, 12);
+                        int mul = getMul(icon, line);
+                        double winMul = mul * 1.0D / BASE_LINE;
+                        if (winMul <= 1) {
+                            tempFactor *= 0.33780182;
+                        }
+                        if (RandomUtil.nextDouble() < tempFactor / winMul) {
+                            rotary[i1][i] = icon;
+                        } else {
+                            continue;
+                        }
+                    } else {
+                        rotary[i1][i] = icon;
+                    }
+                    iconCount[icon]++;
+                    Set<Integer> prizeIndex = prizeIndexMap.getOrDefault(icon, new HashSet<>());
+                    prizeIndex.add(i1 * COLUMNS + i);
+                    prizeIndexMap.put(icon, prizeIndex);
+                    break;
+                }
+            }
+        }
+    }
+
+    private static void handleMultiMultiplier(Scene scene) {
+        int totalMul = 0;
+        for (Map<Integer, Integer> map : scene.getMultiIconIndexList()) {
+            if (map.isEmpty()) continue;
+
+            totalMul += map.values().stream().reduce(Integer::sum).get();
+        }
+        scene.setDoubleMul(totalMul == 0 ? 1 : totalMul);
+    }
+
+    private static void installDropScatter(int[][] dropRotary) {
+        int dropScatterSize = getScatterSize(0.2);
+        if (dropScatterSize == 0) return;
+        Map<Integer, List<Integer>> canInstallIndexesMap = getCanInstallIndexesMap(dropRotary);
+        int size = Math.min(dropScatterSize, canInstallIndexesMap.keySet().size());
+        for (int i = 0; i < size; i++) {
+            ArrayList<Integer> keys = new ArrayList<>(canInstallIndexesMap.keySet());
+            Collections.shuffle(keys);
+            Integer index = keys.remove(0);
+            List<Integer> indexes = canInstallIndexesMap.get(index);
+            Integer idx = indexes.get(RandomUtil.nextInt(indexes.size()));
+            dropRotary[idx / COLUMNS][idx % COLUMNS] = SCATTER;
+        }
+    }
+
+    private static Map<Integer, List<Integer>> getCanInstallIndexesMap(int[][] dropRotary) {
+        Map<Integer, List<Integer>> canInstallIndexesMap = new HashMap<>();
+        for (int i = 0; i < COLUMNS; i++) {
+            List<Integer> idxes = new ArrayList<>();
+            boolean hasScatter = false;
+            for (int i1 = 0; i1 < ROWS; i1++) {
+                if (dropRotary[i1][i] == SCATTER) {
+                    hasScatter = true;
+                    break;
+                }
+                if (dropRotary[i1][i] == -1) {
+                    idxes.add(i1 * COLUMNS + i);
+                }
+            }
+            if (!hasScatter && !idxes.isEmpty()) {
+                canInstallIndexesMap.put(i, idxes);
+            }
+        }
+        return canInstallIndexesMap;
+    }
+
+    private static int[][] copyArr(int[][] rotary) {
+        int[][] result = new int[ROWS][COLUMNS];
+        for (int i = 0; i < ROWS; i++) {
+            result[i] = Arrays.copyOf(rotary[i], COLUMNS);
+        }
+        return result;
+    }
+
+    private static List<List<String>> castColumnToRow(int[][] rotary) {
+        List<List<String>> result = new ArrayList<>();
+        for (int i = 0; i < COLUMNS; i++) {
+            List<String> rowIcons = new ArrayList<>();
+            for (int i1 = 0; i1 < ROWS; i1++) {
+                rowIcons.add(String.valueOf(rotary[i1][i]));
+            }
+            result.add(rowIcons);
+        }
+        return result;
+    }
+
+    private static List<Integer> installMultiIcon(int[][] rotary, int multiIconSize) {
+        List<Integer> result = new ArrayList<>();
+        if (multiIconSize == 0) return result;
+
+        List<Integer> canUseIndex = getCanUseIndexes(rotary);
+        for (int i = 0; i < multiIconSize; i++) {
+            Integer index = canUseIndex.remove(RandomUtil.nextInt(canUseIndex.size()));
+            rotary[index / COLUMNS][index % COLUMNS] = MULTI_ICON;
+            result.add(index);
+        }
+        return result;
+    }
+
+    private static List<Integer> getCanUseIndexes(int[][] rotary) {
+        List<Integer> result = new ArrayList<>();
+        for (int i = 0; i < ROWS; i++) {
+            for (int i1 = 0; i1 < COLUMNS; i1++) {
+                if (rotary[i][i1] != -1) continue;
+
+                result.add(i * COLUMNS + i1);
+            }
+        }
+        return result;
+    }
+
+    private static void installScatter(int[][] rotary, int scatterSize) {
+        if (scatterSize == 0) return;
+
+        List<Integer> canUseColumnIds = new ArrayList<>(Arrays.asList(0, 1, 2, 3, 4, 5));
+        for (int i = 0; i < scatterSize; i++) {
+            Integer index = canUseColumnIds.remove(RandomUtil.nextInt(canUseColumnIds.size()));
+            rotary[RandomUtil.nextInt(ROWS)][index] = SCATTER;
+        }
+    }
+
+
+    public static PrizeIcon checkPrize(int[] arr, int[] prizeLine, int hitLine) {
+        Integer icon = null;
+        int count = 0;
+        for (int current : arr) {
+            if (current == MULTI_ICON || current == -1) {
+                count++;
+                continue;
+            }
+            if (icon == null) {
+                icon = current;
+                count++;
+                continue;
+            }
+            if (icon == current) {
+                count++;
+            } else {
+                break;
+            }
+        }
+        if (icon != null && count >= 3) {
+            Set<Integer> pos = new HashSet<>();
+            for (int i = 0; i < count; i++) {
+                pos.add(prizeLine[i]);
+            }
+            return new PrizeIcon(icon, hitLine, count, pos);
+        }
+        return null;
+    }
+
+    private static int[] checkLineIcon(int[] prizeLine, int[][] rotary) {
+        int[] lineIcons = new int[COLUMNS];
+        for (int i = 0; i < prizeLine.length; i++) {
+            int index = prizeLine[i];
+            int icon = rotary[index / COLUMNS][index % COLUMNS];
+            lineIcons[i] = icon;
+        }
+        return lineIcons;
+    }
+
+
+    /**
+     * @return 获取初始化转轴列表
+     */
+    private static int[][] getInitRotary() {
+        int[][] rotary = new int[ROWS][COLUMNS];
+        for (int[] ints : rotary) {
+            Arrays.fill(ints, -1);
+        }
+        return rotary;
+    }
+
+    @Override
+    public int getCoolTime() {
+        return 50;
+    }
+
+    @Override
+    public double getWinGold() {
+        return totalWinGold;
+    }
+
+    @Override
+    public JSONObject codeResultData(Player gamePlayer, double betScore, double factor) {
+        Scene sceneIconVo = getResultScene(betScore, factor, gamePlayer);
+        double totalWin = sceneIconVo.getGold();
+        this.totalWinGold = DecimalUtil.getBigDecimal2(totalWin).doubleValue();
+        List<Scene> scenes = getScenes(gamePlayer);
+        if (scenes == null) {
+            scenes = new ArrayList<>();
+        }
+        scenes.add(sceneIconVo);
+        gamePlayer.getExtendJson().put(SCENE, scenes);
+        gamePlayer.getExtendJson().put(BET_SCORE, betScore);
+        return new JSONObject();
+    }
+
+    @Override
+    public double getCapacity(Player player, double betScore) {
+        return 0;
+    }
+
+    @Override
+    public JSONObject codeLogData(Player gamePlayer, GameInfo roomInfo) {
+        JSONObject jsonObject = new JSONObject(true);
+        List<Scene> fruitData = getScenes(gamePlayer);
+        if (null != fruitData) {
+            JSONArray jsonArray = new JSONArray();
+            for (Scene fruitDatum : fruitData) {
+                JSONObject object = (JSONObject) JSON.toJSON(fruitDatum);
+                jsonArray.add(object);
+            }
+            jsonObject.put("iconData", jsonArray.toJSONString());
+            jsonObject.put("uuid", TimeUtil.getNow());
+            jsonObject.put("betMul", gamePlayer.getExtendJson().getInteger("betMul"));
+            jsonObject.put(PARENT_ORDER, fruitData.get(0).getPOrder());
+            return jsonObject;
+        }
+        log.error("{}.写入注单详情异常,场景为null", gamePlayer.getUser().getUserID());
+        throw new RuntimeException("注单详情异常!");
+    }
+
+    @Override
+    public void changeUi(Player gamePlayer, String s) {
+    }
+
+    /**
+     * 获取注单详情
+     *
+     * @param data   客户端参数
+     * @param player 待获取的玩家
+     */
+    @Override
+    public Object getGameLogDetail(String data, Player player) {
+        JSONObject jb = JSONObject.parseObject(data);
+        Map<String, Object> map = new HashMap<>();
+        map.put(GameKey.USER_ID, player.getUser().getUserID());
+        map.put(GameKey.GAME_CODE, table.getGameInfo().getGameCode());
+        map.put(GameKey.MERCHANT_ID, player.getUser().getMerchantId());
+        if (jb.containsKey(GameKey.GAME_DATA)) {
+            map.put(GameKey.GAME_DATA, jb.getString(GameKey.GAME_DATA));
+        }
+        if (jb.containsKey(GameKey.ROW_ID)) {
+            map.put(GameKey.ROW_ID, jb.getString(GameKey.ROW_ID));
+        }
+        JSONObject jsonObject = table.getGameService().requestRecord(getRecord()[1], map);
+        Object historyToClient = parseOrderDetailLog(jsonObject);
+        log.info("userid = {},orderDetail => {}", player.getUser().getUserID(), JSONObject.toJSONString(historyToClient));
+        return historyToClient;
+    }
+
+    private Object parseOrderDetailLog(JSONObject jsonObject) {
+        RoundDetailDto historyToClient = new RoundDetailDto();
+        try {
+            int code = jsonObject.getInteger("code");
+            if (code == 200) {
+                JSONObject data = jsonObject.getJSONObject("data");
+                JSONObject jDetails = data.getJSONObject("details");
+                JSONObject extData = jDetails.getJSONObject("extData");
+                String gameDetail = extData.getString("iconData");
+                return JSONArray.parseArray(gameDetail, RoundDetailDto.class);
+            }
+        } catch (Exception e) {
+            log.error("rep record error", e);
+        }
+        return historyToClient;
+    }
+}
