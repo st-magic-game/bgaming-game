@@ -1,0 +1,125 @@
+package com.bgaming.alienfruits2.service;
+
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
+import com.bgaming.alienfruits2.entity.PlayerAdditionalInformation;
+import com.bgaming.alienfruits2.entity.client.ApiClientResult;
+import com.bgaming.alienfruits2.mapper.PlayerAdditionalInformationMapper;
+import com.game.base.application.service.IPlayerService;
+import com.game.base.common.util.TimeUtil;
+import com.game.base.domain.player.Player;
+import com.game.base.interfaces.dto.bgaming.LayoutData;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+
+import javax.annotation.Resource;
+import java.util.ArrayList;
+import java.util.List;
+
+import static com.bgaming.alienfruits2.logic.AlienFruits2Context.*;
+
+@Slf4j
+@Service
+public class PlayerServiceImpl implements IPlayerService {
+
+    private static final String REELS = "";
+
+    private static final String SCREEN = "[[\"1\",\"1\",\"0\",\"4\",\"4\"],[\"7\",\"9\",\"9\",\"6\",\"6\"],[\"6\",\"4\",\"4\",\"9\",\"9\"],[\"7\",\"6\",\"6\",\"4\",\"4\"],[\"6\",\"2\",\"2\",\"8\",\"8\"],[\"7\",\"5\",\"5\",\"8\",\"8\"]]";
+
+    private static final String SPECIAL_PAY_TABLE = "{\"[:scatter,\\\"0\\\"]\":{\"4\":3,\"5\":5,\"6\":100}}";
+
+    private String test = "{\"available_bets\":[20,40,60,100,160,200,300,400,500,700,1000,1500,2000,3000,4000,5000],\"default_bet\":20,\"paytable\":{\"1\":[200,500,1000],\"2\":[50,200,500],\"3\":[40,100,300],\"4\":[30,40,240],\"5\":[20,30,200],\"6\":[16,24,160],\"7\":[10,20,100],\"8\":[8,18,80],\"9\":[5,15,40]},\"paytable_levels\":null,\"special_symbols\":[{\"kind\":\"scatter\",\"symbol\":\"0\"}],\"special_paytable\":{\"[:scatter,\\\"0\\\"]\":{\"4\":3,\"5\":5,\"6\":100}},\"layout\":{\"reels\":6,\"rows\":5},\"currency\":{\"code\":\"FUN\",\"symbol\":\"FUN\",\"subunits\":100,\"exponent\":2},\"screen\":[[\"1\",\"1\",\"0\",\"4\",\"4\"],[\"7\",\"9\",\"9\",\"6\",\"6\"],[\"6\",\"4\",\"4\",\"9\",\"9\"],[\"7\",\"6\",\"6\",\"4\",\"4\"],[\"6\",\"2\",\"2\",\"8\",\"8\"],[\"7\",\"5\",\"5\",\"8\",\"8\"]],\"feature_options\":{\"feature_multipliers\":{\"base_bet\":20,\"freespin_chance\":25,\"freespin_buy\":2000},\"disabled_features\":[]}}";
+
+    @Resource
+    private PlayerAdditionalInformationMapper mapper;
+
+    @Override
+    public void savePlayerData(Player player) {
+        if (player != null) {
+            List<ApiClientResult> apiClientResults = new ArrayList<>();
+            int freeNum = 0;
+            int totalFreeNum = 0;
+            String usedFeature = "No";
+            if (player.extendDataContainsKey("apiClient")) {
+                apiClientResults = player.getExtendDataList("apiClient", ApiClientResult.class);
+            }
+            if (player.extendDataContainsKey("freeNum")) {
+                freeNum = player.getEFreeNum();
+            }
+            if (player.extendDataContainsKey("totalFreeNum")) {
+                totalFreeNum = player.getExtendData("totalFreeNum",Integer.class);
+            }
+            if (player.extendDataContainsKey("bonusBuy")) {
+                usedFeature = player.getExtendData("bonusBuy", String.class);
+            }
+            double stake = player.getUser().getBankScore();
+            PlayerAdditionalInformation pai = new PlayerAdditionalInformation();
+            pai.setUserId(player.getUserId()).setLastUi(JSONObject.toJSONString(apiClientResults))
+                            .setBetScore(stake).setFreeNum(freeNum).setTotalFreeNum(totalFreeNum)
+                            .setUsedFeature(usedFeature)
+                            .setUpdateTime(TimeUtil.getNow());
+            int result = mapper.upsertLastUiByUserId(pai);
+            log.info("userId = {}, saveData = {}.result = {}", player.getUser().getUserID(),JSONObject.toJSONString(pai),result);
+        }
+    }
+
+    @Override
+    public void restorePlayerData(Player player, JSONObject gameInfo) {
+        JSONObject options = gameInfo.getJSONObject("options");
+        options.put("layout", LayoutData.builder().reels(6).rows(5).build());
+        options.put("paytable", getPayTable());
+        options.put("paytable_levels", null);
+        options.put("screen", JSONArray.parse(SCREEN));
+        options.put("feature_options", getFeatureOptions());
+        options.put("special_symbols", getSpecialSymbols());
+        options.put("special_paytable",JSONObject.parseObject(SPECIAL_PAY_TABLE));
+//        gameInfo.put("options",JSONObject.parseObject(test));
+
+//        JSONObject currency = options.getJSONObject("currency");
+//        currency.put("code","FUN");
+//        currency.put("symbol","FUN");
+        restoreData(player,gameInfo);
+        gameInfo.put("options",JSONObject.parseObject(test));
+
+    }
+
+    private void restoreData(Player player, JSONObject gameInfo) {
+        if (player.extendDataContainsKey("apiClient")) {
+            List<ApiClientResult> apiClient = player.getExtendDataList("apiClient", ApiClientResult.class);
+            if (!apiClient.isEmpty()) {
+                ApiClientResult apiClientResult = apiClient.get(apiClient.size() - 1);
+                if (!apiClientResult.getFlow().getState().equals("closed")) {
+                    gameInfo.put("outcome",apiClientResult.getOutcome());
+                }
+                if (apiClientResult.getFeatures() != null) {
+                    gameInfo.put("features",apiClientResult.getFeatures());
+                }
+            }
+        } else {
+            PlayerAdditionalInformation pai = mapper.getAdditionalInformation(player.getUserId());
+            if (pai != null) {
+                String lastUi = pai.getLastUi();
+                List<ApiClientResult> apiClientResults = JSONArray.parseArray(lastUi, ApiClientResult.class);
+                player.setExtendData("apiClient",apiClientResults);
+                player.setEFreeNum(pai.getFreeNum());
+                player.setExtendData("totalFreeNum",pai.getTotalFreeNum());
+                player.setExtendData("bonusBuy",pai.getUsedFeature());
+                if (!apiClientResults.isEmpty()) {
+                    ApiClientResult apiClientResult = apiClientResults.get(apiClientResults.size() - 1);
+                    if (!apiClientResult.getFlow().getState().equals("closed")) {
+                        gameInfo.put("outcome",apiClientResult.getOutcome());
+                    }
+                    if (apiClientResult.getFeatures() != null) {
+                        gameInfo.put("features",apiClientResult.getFeatures());
+                    }
+                }
+                log.info("userid = {},restoreData = {}", player.getUserId(), JSONObject.toJSONString(pai));
+            } else {
+                log.info("userid = {},No restoreData", player.getUserId());
+            }
+        }
+
+
+    }
+
+}

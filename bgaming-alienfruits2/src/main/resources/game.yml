@@ -1,0 +1,2 @@
+tableSink: com.bgaming.alienfruits2.logic.GameTable
+timeout: 900000

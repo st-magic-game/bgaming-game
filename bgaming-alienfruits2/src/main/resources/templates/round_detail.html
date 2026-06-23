@@ -1,0 +1,234 @@
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <link rel="stylesheet" th:href="${clientBase} + '/static/css/active_admin.css'"/>
+    <link rel="stylesheet" th:href="${clientBase} + '/static/css/application.css'"/>
+    <title></title>
+</head>
+<body>
+
+<h2 class="history_header">
+    Alien Fruits 2: Round Details
+</h2>
+
+<table border="1" class="history_table" id="games_history">
+    <tbody>
+    <tr>
+        <th><h4 class="center_cell">Date/Time</h4></th>
+        <th><h4 class="center_cell">Bet</h4></th>
+        <th><h4 class="center_cell">Total Win</h4></th>
+        <th><h4 class="center_cell">Profit</h4></th>
+        <th><h4 class="center_cell">Balance Before</h4></th>
+        <th><h4 class="center_cell">Balance after</h4></th>
+        <th><h4 class="center_cell">Currency</h4></th>
+        <th><h4 class="center_cell">Used Feature</h4></th>
+    </tr>
+    <tr>
+        <td class="table_delimiter" th:text="${detail.time}"></td>
+        <td class="table_delimiter" th:text="${detail.betText}"></td>
+        <td class="table_delimiter" th:text="${detail.totalWinText}"></td>
+        <td class="table_delimiter" th:text="${detail.profitText}"></td>
+        <td class="table_delimiter" th:text="${detail.balanceBeforeText}"></td>
+        <td class="table_delimiter" th:text="${detail.balanceAfterText}"></td>
+        <td class="table_delimiter" th:text="${detail.currency}"></td>
+        <td class="table_delimiter">
+            <span th:text="${detail.usedFeature != null ? detail.usedFeature : 'No'}"></span>
+        </td>
+    </tr>
+    <tr>
+        <td class="round_view" colspan="8">
+            <div th:each="result : ${detail.clientResults}">
+                <div class="round_details">
+                    <div th:each="screenData, sStat : ${result.outcome.storage.saved_screens}"
+                         th:class="${sStat.last} ? 'slots_spin screen_margin' : 'slots_spin'">
+
+                        <!-- 棋盘 -->
+                        <div class="slots_outcome columns-6 rows-5">
+                            <th:block th:each="rowIdx : ${#numbers.sequence(0, screenData[0].size() - 1)}">
+                                <th:block th:each="col, colStat : ${screenData}">
+                                    <th:block th:with="cell=${col[rowIdx]}">
+                                        <div th:if="${cell == 12}" class="alien_fruits2-bonus">
+                                            <p class="center_symbol_value_formatter" style="margin-left: 80px;">
+                                                <th:block th:each="bomb : ${result.outcome.storage.bombs}">
+                                                    <span th:if="${bomb[2][0] == colStat.index and bomb[2][1] == rowIdx}"
+                                                          th:text="${bomb[1]}"></span>
+                                                </th:block>
+                                            </p>
+                                        </div>
+                                        <div th:if="${cell != 12}"
+                                             th:class="'alien_fruits2-' + ${@alienFruits2Context.getSymbolName(cell)}">
+                                        </div>
+                                    </th:block>
+                                </th:block>
+                            </th:block>
+                        </div>
+
+                        <!-- bets -->
+                        <div class="bets">
+                            <!-- spin -->
+                            <th:block th:if="${result.flow.command == 'spin'}">
+                                Total Bet: <span th:text="${detail.betTextBuy}"></span>
+                                <br/>
+                                <th:block th:if="${result.outcome.storage.total_multiplier > 0}">
+                                    Total Bonus Multiplier
+                                    <span th:text="${result.outcome.storage.total_multiplier}"></span>
+                                    <br/>
+                                </th:block>
+                                <span class="custom-inline-block-hints"
+                                      title="The maximum win amount is capped, and if the final outcome exceeds the possible maximum win, the player is awarded winnings in accordance with the maximum win cap.">
+                                    Total Screen Win
+                                    <span th:text="${@alienFruits2Context.getCascadeWin(result.outcome.wins, sStat.index) > 0 ? @alienFruits2Context.getCascadeWin(result.outcome.wins, sStat.index).toPlainString() : @alienFruits2Context.getScatterWin(result.outcome.wins).toPlainString()}"></span>
+                                </span>
+                                <br/>
+
+                                <th:block th:if="${sStat.first}">
+                                    Total Round Win
+                                    <span th:text="${#numbers.formatDecimal(result.outcome.win / 100.0, 1, 'POINT', 2, 'COMMA')}"></span>
+                                    <br/><br/>
+                                    <th:block th:if="${result.outcome.freespins_issued > 0}">
+                                        Issued Freespins
+                                        <span th:text="${result.outcome.freespins_issued}"></span>
+                                    </th:block>
+                                </th:block>
+                                <th:block th:if="${result.outcome.storage.getSaved_screens().size()> 1}">
+                                    <br/>
+                                    Current cascade level is:
+                                    <span th:text="${sStat.index + 1}"></span>
+                                </th:block>
+                            </th:block>
+
+                            <!-- freespin -->
+                            <th:block th:if="${result.flow.command == 'freespin'}">
+                                <strong th:text="'Freespins ' + (${result.features.getIntValue('freespins_issued')} - ${result.features.getIntValue('freespins_left')}) + ' from ' + ${result.features.getIntValue('freespins_issued')}"></strong>
+                                <br/>
+                                Total Bet
+                                <span>0</span>
+                                <br/>
+                                <th:block th:if="${result.outcome.storage.total_multiplier > 0}">
+                                    Total Bonus Multiplier
+                                    <span th:text="${result.outcome.storage.total_multiplier}"></span>
+                                    <br/>
+                                </th:block>
+                                <span class="custom-inline-block-hints"
+                                      title="The maximum win amount is capped, and if the final outcome exceeds the possible maximum win, the player is awarded winnings in accordance with the maximum win cap.">
+                                    Total Screen Win
+                                    <!-- 最后画面且有multiplier：显示 calcTotalWin - sumCascadeWins -->
+                                    <th:block th:if="${sStat.last and result.outcome.storage.total_multiplier > 0 and result.outcome.storage.getRound_multiplier() > 0}">
+                                        <span th:text="${@alienFruits2Context.calcTotalWin(result.outcome.wins, result.outcome.storage.total_multiplier - 1).toPlainString()}"></span>
+                                    </th:block>
+                                    <!-- 其他画面：当前cascade赢分 -->
+                                    <th:block th:unless="${sStat.last and result.outcome.storage.total_multiplier > 0 and result.outcome.storage.getRound_multiplier() > 0}">
+                                        <span th:text="${@alienFruits2Context.getCascadeWin(result.outcome.wins, sStat.index).toPlainString()}"></span>
+                                    </th:block>
+                                </span>
+                                <br/>
+                                <th:block th:if="${sStat.first}">
+                                    Total Round Win
+                                    <span th:text="${result.outcome.win > 0 ? @alienFruits2Context.calcTotalWin(result.outcome.wins, result.outcome.storage.total_multiplier).toPlainString() : '0'}"></span>
+                                    <br/><br/>
+                                    <th:block th:if="${result.outcome.freespins_issued > 0}">
+                                        Issued Freespins
+                                        <span th:text="${result.outcome.freespins_issued}"></span>
+                                    </th:block>
+                                </th:block>
+                                <!-- cascade level：所有有win的画面都显示 -->
+                                <th:block th:with="cascadeKey=${result.outcome.storage.getSaved_screens().size() > 1}">
+                                    <br/>
+                                    Current cascade level is:
+                                    <span th:text="${sStat.index + 1}"></span>
+                                </th:block>
+                            </th:block>
+                        </div>
+
+                        <!-- payout -->
+                        <div class="payout">
+                            <!-- spin payout -->
+                            <th:block th:if="${result.flow.command == 'spin'}">
+                                <th:block th:with="cascadeKey=${'cascade_' + sStat.index}">
+                                    <th:block th:if="${@alienFruits2Context.hasCascadeWin(result.outcome.wins, cascadeKey)}">
+                                        Win combinations
+                                        <ul>
+                                            <li th:each="win : ${result.outcome.wins}"
+                                                th:if="${win[0] != null and win[0].toString() == cascadeKey}">
+                                                <div class="flex-display">
+                                                    <span th:text="${win[2].size()}"></span>x
+                                                    <div class="small-symbol">
+                                                        <div th:class="'alien_fruits2-' + ${@alienFruits2Context.getSymbolName(win[3])}"></div>
+                                                    </div>
+                                                    <span th:text="${#numbers.formatDecimal(win[1] / 100.0, 1, 'POINT', 2, 'COMMA')}"></span>
+                                                </div>
+                                            </li>
+                                        </ul>
+                                    </th:block>
+                                    <th:block th:if="${!@alienFruits2Context.hasCascadeWin(result.outcome.wins, cascadeKey)}">
+                                        <th:block th:each="win : ${result.outcome.wins}"
+                                                  th:if="${win[0] != null and win[0].toString().startsWith('scatter')}">
+                                            Scatters Win
+                                            <li th:text="${#numbers.formatDecimal(win[1] / 100.0, 1, 'POINT', 2, 'COMMA')}"></li>
+                                        </th:block>
+                                        No won combinations
+                                    </th:block>
+                                </th:block>
+                            </th:block>
+
+                            <!-- freespin payout -->
+                            <th:block th:if="${result.flow.command == 'freespin'}">
+                                <th:block th:with="cascadeKey=${'cascade_' + sStat.index}">
+                                    <th:block th:if="${@alienFruits2Context.hasCascadeWin(result.outcome.wins, cascadeKey)}">
+                                        <th:block th:if="${sStat.last and result.outcome.storage.round_multiplier > 0}">
+                                            Bonus Multiplier:
+                                            <span th:text="${result.outcome.storage.round_multiplier}"></span>
+                                            <br/><br/>
+                                            Total win =
+                                            <span th:text="${@alienFruits2Context.sumCascadeWins(result.outcome.wins)}"></span> *
+                                            <span th:text="${result.outcome.storage.total_multiplier}"></span> =
+                                            <span th:text="${@alienFruits2Context.calcTotalWin(result.outcome.wins, result.outcome.storage.total_multiplier)}"></span>
+                                            <br/>
+                                            Total Spin Win
+                                            <span th:text="${@alienFruits2Context.sumCascadeWins(result.outcome.wins)}"></span>
+                                        </th:block>
+                                        <th:block th:if="${!sStat.last or result.outcome.storage.round_multiplier == 0}">
+                                            Win combinations
+                                            <ul>
+                                                <li th:each="win : ${result.outcome.wins}"
+                                                    th:if="${win[0] != null and win[0].toString() == cascadeKey}">
+                                                    <div class="flex-display">
+                                                        <span th:text="${win[2].size()}"></span>x
+                                                        <div class="small-symbol">
+                                                            <div th:class="'alien_fruits2-' + ${@alienFruits2Context.getSymbolName(win[3])}"></div>
+                                                        </div>
+                                                        <span th:text="${#numbers.formatDecimal(win[1] / 100.0, 1, 'POINT', 2, 'COMMA')}"></span>
+                                                    </div>
+                                                </li>
+                                            </ul>
+                                        </th:block>
+                                    </th:block>
+                                    <th:block th:if="${!@alienFruits2Context.hasCascadeWin(result.outcome.wins, cascadeKey)}">
+                                        <th:block th:if="${sStat.last and result.outcome.storage.round_multiplier > 0}">
+                                            Bonus Multiplier:
+                                            <span th:text="${result.outcome.storage.round_multiplier}"></span>
+                                            <br/><br/>
+                                            Total win =
+                                            <span th:text="${@alienFruits2Context.sumCascadeWins(result.outcome.wins)}"></span> *
+                                            <span th:text="${result.outcome.storage.total_multiplier}"></span> =
+                                            <span th:text="${@alienFruits2Context.calcTotalWin(result.outcome.wins, result.outcome.storage.total_multiplier)}"></span>
+                                            <br/>
+                                            Total Spin Win
+                                            <span th:text="${@alienFruits2Context.sumCascadeWins(result.outcome.wins)}"></span>
+                                        </th:block>
+                                        <th:block th:if="${!sStat.last or result.outcome.storage.round_multiplier == 0}">
+                                            No won combinations
+                                        </th:block>
+                                    </th:block>
+                                </th:block>
+                            </th:block>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </td>
+    </tr>
+    </tbody>
+</table>
+</body>
+</html>
