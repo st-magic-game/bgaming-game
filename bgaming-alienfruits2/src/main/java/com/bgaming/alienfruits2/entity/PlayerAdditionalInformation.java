@@ -25,6 +25,8 @@ public class PlayerAdditionalInformation {
     /** 玩家投注金额 */
     private double betScore;
 
+    private double beforeScore;
+
     private int freeNum;
 
     private int totalFreeNum;

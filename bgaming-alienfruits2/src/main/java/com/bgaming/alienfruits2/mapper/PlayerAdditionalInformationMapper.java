@@ -18,14 +18,15 @@ public interface PlayerAdditionalInformationMapper {
     PlayerAdditionalInformation getAdditionalInformation(@Param("userId") int userId);
 
     @Insert({
-            "INSERT INTO " + TABLE_NAME + " (userid, lastUi,betScore,freeNum,totalFreeNum,usedFeature,updateTime) " +
-                    "VALUES (#{userId}, #{lastUi}, #{betScore}, #{freeNum},#{totalFreeNum},#{usedFeature}, #{updateTime}) " +
+            "INSERT INTO " + TABLE_NAME + " (userid, lastUi,betScore,beforeScore,freeNum,totalFreeNum,usedFeature,updateTime) " +
+                    "VALUES (#{userId}, #{lastUi}, #{betScore},#{beforeScore}, #{freeNum},#{totalFreeNum},#{usedFeature}, #{updateTime}) " +
                     "ON DUPLICATE KEY UPDATE " +
                     "lastUi = #{lastUi}," +
                     "freeNum = #{freeNum}," +
                     "totalFreeNum = #{totalFreeNum}," +
                     "usedFeature = #{usedFeature}," +
-                    "betScore = #{betScore}"
+                    "betScore = #{betScore}" +
+                    "beforeScore = #{beforeScore}"
     })
     int upsertLastUiByUserId(PlayerAdditionalInformation pai);
 }

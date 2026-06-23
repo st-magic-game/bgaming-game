@@ -4,8 +4,12 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.bgaming.alienfruits2.entity.PlayerAdditionalInformation;
 import com.bgaming.alienfruits2.entity.client.ApiClientResult;
+import com.bgaming.alienfruits2.entity.client.Balance;
+import com.bgaming.alienfruits2.entity.client.Outcome;
+import com.bgaming.alienfruits2.logic.AlienFruits2Context;
 import com.bgaming.alienfruits2.mapper.PlayerAdditionalInformationMapper;
 import com.game.base.application.service.IPlayerService;
+import com.game.base.common.util.DecimalUtil;
 import com.game.base.common.util.TimeUtil;
 import com.game.base.domain.player.Player;
 import com.game.base.interfaces.dto.bgaming.LayoutData;
@@ -13,8 +17,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static com.bgaming.alienfruits2.logic.AlienFruits2Context.*;
 
@@ -40,6 +46,7 @@ public class PlayerServiceImpl implements IPlayerService {
             int freeNum = 0;
             int totalFreeNum = 0;
             String usedFeature = "No";
+            double beforeScore = player.getUser().getScore();
             if (player.extendDataContainsKey("apiClient")) {
                 apiClientResults = player.getExtendDataList("apiClient", ApiClientResult.class);
             }
@@ -52,11 +59,14 @@ public class PlayerServiceImpl implements IPlayerService {
             if (player.extendDataContainsKey("bonusBuy")) {
                 usedFeature = player.getExtendData("bonusBuy", String.class);
             }
+            if (player.extendDataContainsKey("beforeScore")) {
+                beforeScore = player.getExtendData("beforeScore", Double.class);
+            }
             double stake = player.getUser().getBankScore();
             PlayerAdditionalInformation pai = new PlayerAdditionalInformation();
             pai.setUserId(player.getUserId()).setLastUi(JSONObject.toJSONString(apiClientResults))
                             .setBetScore(stake).setFreeNum(freeNum).setTotalFreeNum(totalFreeNum)
-                            .setUsedFeature(usedFeature)
+                            .setUsedFeature(usedFeature).setBeforeScore(beforeScore)
                             .setUpdateTime(TimeUtil.getNow());
             int result = mapper.upsertLastUiByUserId(pai);
             log.info("userId = {}, saveData = {}.result = {}", player.getUser().getUserID(),JSONObject.toJSONString(pai),result);
@@ -92,8 +102,17 @@ public class PlayerServiceImpl implements IPlayerService {
                     gameInfo.put("outcome",apiClientResult.getOutcome());
                 }
                 if (apiClientResult.getFeatures() != null) {
-                    gameInfo.put("features",apiClientResult.getFeatures());
+                    Integer leftNum = apiClientResult.getFeatures().getInteger("freespins_left");
+                    if (leftNum > 0) {
+                        gameInfo.put("features",apiClientResult.getFeatures());
+                    }
                 }
+                double beforeScore = player.getExtendData("beforeScore",Double.class);
+                AtomicReference<Double> totalScore = new AtomicReference<>((double) 0);
+                apiClient.forEach(a -> totalScore.updateAndGet(v -> v + a.getOutcome().getWin().doubleValue()));
+                Balance balance = new Balance(DecimalUtil.getBigDecimal2(totalScore.get()),DecimalUtil.getBigDecimal2((beforeScore - player.getUser().getBankScore()) * AlienFruits2Context.SUB_UNITS));
+                gameInfo.put("balance",balance);
+
             }
         } else {
             PlayerAdditionalInformation pai = mapper.getAdditionalInformation(player.getUserId());
@@ -104,13 +123,21 @@ public class PlayerServiceImpl implements IPlayerService {
                 player.setEFreeNum(pai.getFreeNum());
                 player.setExtendData("totalFreeNum",pai.getTotalFreeNum());
                 player.setExtendData("bonusBuy",pai.getUsedFeature());
+                player.setExtendData("beforeScore",pai.getBeforeScore());
                 if (!apiClientResults.isEmpty()) {
                     ApiClientResult apiClientResult = apiClientResults.get(apiClientResults.size() - 1);
                     if (!apiClientResult.getFlow().getState().equals("closed")) {
                         gameInfo.put("outcome",apiClientResult.getOutcome());
+                        AtomicReference<Double> totalScore = new AtomicReference<>((double) 0);
+                        apiClientResults.forEach(a -> totalScore.updateAndGet(v -> v + a.getOutcome().getWin().doubleValue()));
+                        Balance balance = new Balance(DecimalUtil.getBigDecimal2(totalScore.get()),DecimalUtil.getBigDecimal2((pai.getBeforeScore() - player.getUser().getBankScore()) * AlienFruits2Context.SUB_UNITS));
+                        gameInfo.put("balance",balance);
                     }
                     if (apiClientResult.getFeatures() != null) {
-                        gameInfo.put("features",apiClientResult.getFeatures());
+                        Integer leftNum = apiClientResult.getFeatures().getInteger("freespins_left");
+                        if (leftNum > 0) {
+                            gameInfo.put("features",apiClientResult.getFeatures());
+                        }
                     }
                 }
                 log.info("userid = {},restoreData = {}", player.getUserId(), JSONObject.toJSONString(pai));
