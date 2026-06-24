@@ -34,8 +34,6 @@ public class PlayerServiceImpl implements IPlayerService {
 
     private static final String SPECIAL_PAY_TABLE = "{\"[:scatter,\\\"0\\\"]\":{\"4\":3,\"5\":5,\"6\":100}}";
 
-    private String test = "{\"available_bets\":[20,40,60,100,160,200,300,400,500,700,1000,1500,2000,3000,4000,5000],\"default_bet\":20,\"paytable\":{\"1\":[200,500,1000],\"2\":[50,200,500],\"3\":[40,100,300],\"4\":[30,40,240],\"5\":[20,30,200],\"6\":[16,24,160],\"7\":[10,20,100],\"8\":[8,18,80],\"9\":[5,15,40]},\"paytable_levels\":null,\"special_symbols\":[{\"kind\":\"scatter\",\"symbol\":\"0\"}],\"special_paytable\":{\"[:scatter,\\\"0\\\"]\":{\"4\":3,\"5\":5,\"6\":100}},\"layout\":{\"reels\":6,\"rows\":5},\"currency\":{\"code\":\"FUN\",\"symbol\":\"FUN\",\"subunits\":100,\"exponent\":2},\"screen\":[[\"1\",\"1\",\"0\",\"4\",\"4\"],[\"7\",\"9\",\"9\",\"6\",\"6\"],[\"6\",\"4\",\"4\",\"9\",\"9\"],[\"7\",\"6\",\"6\",\"4\",\"4\"],[\"6\",\"2\",\"2\",\"8\",\"8\"],[\"7\",\"5\",\"5\",\"8\",\"8\"]],\"feature_options\":{\"feature_multipliers\":{\"base_bet\":20,\"freespin_chance\":25,\"freespin_buy\":2000},\"disabled_features\":[]}}";
-
     @Resource
     private PlayerAdditionalInformationMapper mapper;
 
@@ -89,8 +87,6 @@ public class PlayerServiceImpl implements IPlayerService {
 //        currency.put("code","FUN");
 //        currency.put("symbol","FUN");
         restoreData(player,gameInfo);
-        gameInfo.put("options",JSONObject.parseObject(test));
-
     }
 
     private void restoreData(Player player, JSONObject gameInfo) {
@@ -100,6 +96,7 @@ public class PlayerServiceImpl implements IPlayerService {
                 ApiClientResult apiClientResult = apiClient.get(apiClient.size() - 1);
                 if (!apiClientResult.getFlow().getState().equals("closed")) {
                     gameInfo.put("outcome",apiClientResult.getOutcome());
+                    player.setExtendData("beforeScore",DecimalUtil.getBigDecimal2(player.getUser().getScore()));
                 }
                 if (apiClientResult.getFeatures() != null) {
                     Integer leftNum = apiClientResult.getFeatures().getInteger("freespins_left");
@@ -107,10 +104,9 @@ public class PlayerServiceImpl implements IPlayerService {
                         gameInfo.put("features",apiClientResult.getFeatures());
                     }
                 }
-                double beforeScore = player.getExtendData("beforeScore",Double.class);
                 AtomicReference<Double> totalScore = new AtomicReference<>((double) 0);
                 apiClient.forEach(a -> totalScore.updateAndGet(v -> v + a.getOutcome().getWin().doubleValue()));
-                Balance balance = new Balance(DecimalUtil.getBigDecimal2(totalScore.get()),DecimalUtil.getBigDecimal2((beforeScore - player.getUser().getBankScore()) * AlienFruits2Context.SUB_UNITS));
+                Balance balance = new Balance(DecimalUtil.getBigDecimal2(totalScore.get()),DecimalUtil.getBigDecimal2(player.getUser().getScore() * SUB_UNITS));
                 gameInfo.put("balance",balance);
 
             }
@@ -123,14 +119,14 @@ public class PlayerServiceImpl implements IPlayerService {
                 player.setEFreeNum(pai.getFreeNum());
                 player.setExtendData("totalFreeNum",pai.getTotalFreeNum());
                 player.setExtendData("bonusBuy",pai.getUsedFeature());
-                player.setExtendData("beforeScore",pai.getBeforeScore());
+                player.setExtendData("beforeScore",DecimalUtil.getBigDecimal2(player.getUser().getScore()));
                 if (!apiClientResults.isEmpty()) {
                     ApiClientResult apiClientResult = apiClientResults.get(apiClientResults.size() - 1);
                     if (!apiClientResult.getFlow().getState().equals("closed")) {
                         gameInfo.put("outcome",apiClientResult.getOutcome());
                         AtomicReference<Double> totalScore = new AtomicReference<>((double) 0);
                         apiClientResults.forEach(a -> totalScore.updateAndGet(v -> v + a.getOutcome().getWin().doubleValue()));
-                        Balance balance = new Balance(DecimalUtil.getBigDecimal2(totalScore.get()),DecimalUtil.getBigDecimal2((pai.getBeforeScore() - player.getUser().getBankScore()) * AlienFruits2Context.SUB_UNITS));
+                        Balance balance = new Balance(DecimalUtil.getBigDecimal2(totalScore.get()),DecimalUtil.getBigDecimal2(player.getUser().getScore() * SUB_UNITS));
                         gameInfo.put("balance",balance);
                     }
                     if (apiClientResult.getFeatures() != null) {

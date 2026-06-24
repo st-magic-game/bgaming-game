@@ -584,8 +584,8 @@ public class AlienFruits2Context {
         JSONObject jsonObject = new JSONObject();
         JSONObject options = new JSONObject();
         options.put("base_bet",GLOBAL_CONFIG.getBaseBet());
-        options.put("bonus_buy",GLOBAL_CONFIG.getBonusBuy());
-        options.put("freespin_chance",GLOBAL_CONFIG.getFreeSpinBuy());
+        options.put("freespin_chance",GLOBAL_CONFIG.getBonusBuy());
+        options.put("freespin_buy",GLOBAL_CONFIG.getFreeSpinBuy());
         jsonObject.put("feature_multipliers",options);
         jsonObject.put("disabled_features",new ArrayList<>());
         return jsonObject;
