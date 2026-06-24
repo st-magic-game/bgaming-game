@@ -76,13 +76,27 @@
                                 <span class="custom-inline-block-hints"
                                       title="The maximum win amount is capped, and if the final outcome exceeds the possible maximum win, the player is awarded winnings in accordance with the maximum win cap.">
                                     Total Screen Win
-                                    <span th:text="${@alienFruits2Context.getCascadeWin(result.outcome.wins, sStat.index) > 0 ? @alienFruits2Context.getCascadeWin(result.outcome.wins, sStat.index).toPlainString() : @alienFruits2Context.getScatterWin(result.outcome.wins).toPlainString()}"></span>
+                                    <!-- 最后画面且有multiplier：显示 calcTotalWin - sumCascadeWins -->
+                                    <th:block th:if="${sStat.last and result.outcome.storage.total_multiplier > 0 and result.outcome.storage.getRound_multiplier() > 0}">
+                                        <span th:text="${@alienFruits2Context.calcTotalWin(result.outcome.wins, result.outcome.storage.total_multiplier - 1).toPlainString()}"></span>
+                                    </th:block>
+                                    <!-- 其他画面：当前cascade赢分 -->
+                                    <th:block th:unless="${sStat.last and result.outcome.storage.total_multiplier > 0 and result.outcome.storage.getRound_multiplier() > 0}">
+                                        <span th:text="${@alienFruits2Context.getCascadeWin(result.outcome.wins,sStat.index).toPlainString()}"></span>
+                                    </th:block>
                                 </span>
                                 <br/>
 
                                 <th:block th:if="${sStat.first}">
                                     Total Round Win
-                                    <span th:text="${#numbers.formatDecimal(result.outcome.win / 100.0, 1, 'POINT', 2, 'COMMA')}"></span>
+                                    <!-- 最后画面且有multiplier：显示 calcTotalWin - sumCascadeWins -->
+                                    <th:block th:if="${result.outcome.storage.total_multiplier > 0 and result.outcome.storage.getRound_multiplier() > 0}">
+                                        <span th:text="${@alienFruits2Context.calcTotalWin(result.outcome.wins, result.outcome.storage.total_multiplier).toPlainString()}"></span>
+                                    </th:block>
+                                    <!-- 其他画面：当前cascade赢分 -->
+                                    <th:block th:unless="${result.outcome.storage.total_multiplier > 0 and result.outcome.storage.getRound_multiplier() > 0}">
+                                        <span th:text="${@alienFruits2Context.sumCascadeWins(result.outcome.wins).toPlainString()}"></span>
+                                    </th:block>
                                     <br/><br/>
                                     <th:block th:if="${result.outcome.freespins_issued > 0}">
                                         Issued Freespins
@@ -117,13 +131,20 @@
                                     </th:block>
                                     <!-- 其他画面：当前cascade赢分 -->
                                     <th:block th:unless="${sStat.last and result.outcome.storage.total_multiplier > 0 and result.outcome.storage.getRound_multiplier() > 0}">
-                                        <span th:text="${@alienFruits2Context.getCascadeWin(result.outcome.wins, sStat.index).toPlainString()}"></span>
+                                        <span th:text="${@alienFruits2Context.getCascadeWin(result.outcome.wins,sStat.index).toPlainString()}"></span>
                                     </th:block>
                                 </span>
                                 <br/>
                                 <th:block th:if="${sStat.first}">
                                     Total Round Win
-                                    <span th:text="${result.outcome.win > 0 ? @alienFruits2Context.calcTotalWin(result.outcome.wins, result.outcome.storage.total_multiplier).toPlainString() : '0'}"></span>
+                                    <!-- 最后画面且有multiplier：显示 calcTotalWin - sumCascadeWins -->
+                                    <th:block th:if="${result.outcome.storage.total_multiplier > 0 and result.outcome.storage.getRound_multiplier() > 0}">
+                                        <span th:text="${@alienFruits2Context.calcTotalWin(result.outcome.wins, result.outcome.storage.total_multiplier).toPlainString()}"></span>
+                                    </th:block>
+                                    <!-- 其他画面：当前cascade赢分 -->
+                                    <th:block th:unless="${result.outcome.storage.total_multiplier > 0 and result.outcome.storage.getRound_multiplier() > 0}">
+                                        <span th:text="${@alienFruits2Context.sumCascadeWins(result.outcome.wins).toPlainString()}"></span>
+                                    </th:block>
                                     <br/><br/>
                                     <th:block th:if="${result.outcome.freespins_issued > 0}">
                                         Issued Freespins
@@ -165,7 +186,21 @@
                                             Scatters Win
                                             <li th:text="${#numbers.formatDecimal(win[1] / 100.0, 1, 'POINT', 2, 'COMMA')}"></li>
                                         </th:block>
-                                        No won combinations
+                                        <th:block th:if="${sStat.last and result.outcome.storage.round_multiplier > 0}">
+                                            Bonus Multiplier:
+                                            <span th:text="${result.outcome.storage.round_multiplier}"></span>
+                                            <br/><br/>
+                                            Total win =
+                                            <span th:text="${@alienFruits2Context.sumCascadeWins(result.outcome.wins)}"></span> *
+                                            <span th:text="${result.outcome.storage.total_multiplier}"></span> =
+                                            <span th:text="${@alienFruits2Context.calcTotalWin(result.outcome.wins, result.outcome.storage.total_multiplier)}"></span>
+                                            <br/>
+                                            Total Spin Win
+                                            <span th:text="${@alienFruits2Context.sumCascadeWins(result.outcome.wins)}"></span>
+                                        </th:block>
+                                        <th:block th:if="${!sStat.last or result.outcome.storage.round_multiplier == 0}">
+                                            No won combinations
+                                        </th:block>
                                     </th:block>
                                 </th:block>
                             </th:block>

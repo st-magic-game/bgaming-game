@@ -399,7 +399,9 @@ public class AlienFruits2Context {
             if (!apiClientResults.isEmpty()) {
                 round = apiClientResults.get(0).getFlow().getRound_id();
                 round_num += apiClientResults.size();
-                totalMultiplier = apiClientResults.get(apiClientResults.size() - 1).getOutcome().getStorage().getTotal_multiplier();
+                if (round_num > 1) {
+                    totalMultiplier = apiClientResults.get(apiClientResults.size() - 1).getOutcome().getStorage().getTotal_multiplier();
+                }
             }
         }
         if (totalFreeNum > 0) {
@@ -514,7 +516,7 @@ public class AlienFruits2Context {
         if (wins == null || wins.isEmpty()) return BigDecimal.ZERO;
         BigDecimal sum = BigDecimal.ZERO;
         for (List<Object> win : wins) {
-            if (win != null && win.get(0) != null && win.get(0).toString().startsWith("cascade")) {
+            if (win != null && win.get(0) != null && !win.get(0).toString().startsWith("bombs")) {
                 sum = sum.add(new BigDecimal(win.get(1).toString()));
             }
         }
