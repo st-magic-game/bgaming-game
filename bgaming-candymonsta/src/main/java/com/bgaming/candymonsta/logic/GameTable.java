@@ -24,6 +24,7 @@ import com.game.base.interfaces.dto.UsePrize;
 import com.game.base.interfaces.dto.bgaming.BgBalance;
 import com.game.base.interfaces.dto.bgaming.FlowData;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
@@ -119,6 +120,13 @@ public class GameTable extends TableSink {
             double changeScore = winGold - orderStake;
             setControlScore(player, changeScore);
             resetPlayerExt(player);
+            String pOrder = player.getUser().getUserID() + "-" + TimeUtil.getNow();
+            Scene scene = scenes.get(0);
+            scene.setAfterScore(DecimalUtil.getBigDecimal2(beforeScore - orderStake).doubleValue());
+            scene.setPOrder(pOrder);
+            player.getExtendJson().put("pOrder", pOrder);
+            player.initBetId(gameInfo.getRoomID(), scene.getOrder());
+            player.setBetIdNum(0);
             SpinResponse response = getSpinResponse(player, orderStake, scenes, stake, beforeScore, 0);
             log.info("玩家 {}  数据 result {}", player.getUserId(), response);
             return response;
@@ -129,48 +137,57 @@ public class GameTable extends TableSink {
     }
 
     private SpinResponse getSpinResponse(Player player, double orderStake, List<Scene> scenes, Double stake, double beforeScore, int times) {
-        double winGold = scenes.get(times).getGold();
-        setCurData(player, orderStake, winGold);
         Scene scene = scenes.get(times);
+        boolean finish = checkFinishScene(scene);
+        if(orderStake > 0){
+            double winGold = scenes.stream().map(Scene::getGold).reduce(Double::sum).get();
+            boolean isLastOrder = finish && winGold == 0;
+            JSONObject extendData = getExtendData(player, scenes.get(0), isLastOrder);
+            setCurData(player, orderStake, 0);
+            this.table.getGameService().getRabbitMqService().sendOrder(player, DecimalUtil.getBigDecimal2(beforeScore).doubleValue(), this.gameInfo,
+                    orderStake, 0, 0, scenes.get(0).getPOrder(), extendData, isLastOrder ? 1 : 0, false);
+        }
         scene.setBetScore(DecimalUtil.getBigDecimal2(orderStake).doubleValue());
         scene.setBetScoreServer(DecimalUtil.getBigDecimal2(stake).doubleValue());
-        String pOrder = player.getUser().getUserID() + "-" + TimeUtil.getNow();
         scene.setBeforeScore(DecimalUtil.getBigDecimal2(beforeScore).doubleValue());
         if (times > 0) {
-            pOrder = scenes.get(0).getPOrder();
+            String pOrder = scenes.get(0).getPOrder();
             String order = scenes.get(0).getOrder();
             scene.setOrder(order);
             scene.setAfterScore(DecimalUtil.getBigDecimal2(player.getUser().getScore()).doubleValue());
-        } else {
-            scene.setAfterScore(DecimalUtil.getBigDecimal2(beforeScore - orderStake).doubleValue());
+            scene.setPOrder(pOrder);
         }
-        player.getExtendJson().put("pOrder", pOrder);
-        scene.setPOrder(pOrder);
-
-        boolean finish = (scene.getType() == 0 && scene.getOpenFreeNum() == 0)
-                || (scene.getType() == 1 && scene.getFreeNum() == 1 && scene.getOpenFreeNum() == 0);
-        JSONObject extendData = getExtendString(player, scene.getPOrder(), finish);
-        extendData.put(FREE_TYPE, scene.getFreeType());
-        extendData.put(BUY_TYPE, 0);
-        extendData.put(BET_TYPE, 0);
-        SpinResponse response = generateResponse(scenes.subList(0,times + 1), finish, DecimalUtil.getBigDecimal2(scenes.get(0).getAfterScore()).doubleValue());
+        SpinResponse response = generateResponse(scenes.subList(0,times + 1), finish, DecimalUtil.getBigDecimal2(player.getUser().getScore()).doubleValue());
         List<RoundDetailDto> roundDetailDtos = new ArrayList<>();
         if (finish) {
             for (Scene tmpScene : scenes) {
                 RoundDetailDto roundDetailDto = generateRoundDetail(tmpScene.getBeforeScore(), player, tmpScene);
                 roundDetailDtos.add(roundDetailDto);
             }
-        } else {
-            RoundDetailDto roundDetailDto = generateRoundDetail(beforeScore, player, scene);
-            roundDetailDtos.add(roundDetailDto);
+            JSONObject extendData = getExtendData(player, scenes.get(0), true);
+            double winGold = scenes.stream().map(Scene::getGold).reduce(Double::sum).get();
+            sendServerMsg(player, winGold, roundDetailDtos, extendData);
         }
-        sendServerMsg(player, beforeScore, orderStake, winGold, roundDetailDtos, extendData, finish, scene.getNumber());
         player.getExtendJson().put("spinResponse", response);
         if (finish) {
             player.getExtendJson().remove(SCENE);
             player.getExtendJson().remove("spinResponse");
         }
         return response;
+    }
+
+    private static boolean checkFinishScene(Scene scene) {
+        return (scene.getType() == 0 && scene.getOpenFreeNum() == 0)
+                || (scene.getType() == 1 && scene.getFreeNum() == 1 && scene.getOpenFreeNum() == 0);
+    }
+
+    @NotNull
+    private JSONObject getExtendData(Player player, Scene scene, boolean finish) {
+        JSONObject extendData = getExtendString(player, scene.getPOrder(), finish);
+        extendData.put(FREE_TYPE, scene.getFreeType());
+        extendData.put(BUY_TYPE, 0);
+        extendData.put(BET_TYPE, 0);
+        return extendData;
     }
 
     private boolean isErrorSpinReq(List<Scene> scenes) {
@@ -455,19 +472,22 @@ public class GameTable extends TableSink {
 
     }
 
-    private void sendServerMsg(Player player, double beforeScore, double betScore, double winGold, List<RoundDetailDto> gameDetail, JSONObject extData, boolean finish, int number) {
+    private void sendServerMsg(Player player, double winGold, List<RoundDetailDto> gameDetail, JSONObject extData) {
         List<Scene> scenes = getScenes(player);
+        double afterBetScore = scenes.get(0).getAfterScore();
         player.initBetId(gameInfo.getRoomID(), scenes.get(0).getOrder());
-        player.setBetIdNum(number);
-        double finishBeforeScore = finish ? gameDetail.get(0).getBalanceBefore().doubleValue() : beforeScore;
-        this.table.getGameService().getRabbitMqService().sendOrder(player, DecimalUtil.getBigDecimal2(finishBeforeScore).doubleValue(), this.gameInfo,
-                betScore, winGold, number, scenes.get(0).getPOrder(), extData, finish ? 1 : 0, false);
-        if (finish) {
-            log.info("userid = {},发送完整注单", player.getUser().getUserID());
-        } else {
-            log.info("userid = {},发送单场注单", player.getUser().getUserID());
+        player.setBetIdNum(1);
+        if(winGold > 0){
+            setCurData(player, 0, winGold);
+            this.table.getGameService().getRabbitMqService().sendOrder(player, DecimalUtil.getBigDecimal2(afterBetScore).doubleValue(), this.gameInfo,
+                    0, winGold, 1, scenes.get(0).getPOrder(), extData, 1, false);
+            RoundDetailDto lastRoundDetail = gameDetail.get(gameDetail.size() - 1);
+            BigDecimal afterScore = DecimalUtil.getBigDecimal2(player.getUser().getScore());
+            lastRoundDetail.setBalanceAfter(afterScore);
+            lastRoundDetail.setBalanceAfterText(afterScore.stripTrailingZeros().toPlainString());
         }
-        sendDataLog(player, gameDetail, finish,winGold);
+        log.info("userid = {},发送完整注单", player.getUser().getUserID());
+        sendDataLog(player, gameDetail, winGold);
     }
 
 
@@ -507,24 +527,29 @@ public class GameTable extends TableSink {
      * 发送es日志
      *
      * @param player  当前玩家
-     * @param finish
      */
-    private void sendDataLog(Player player, Object gameDetail, boolean finish, double gold) {
+    private void sendDataLog(Player player, List<RoundDetailDto>  gameDetail, double gold) {
         List<Scene> scenes = getScenes(player);
         if (scenes == null) {
             log.error("发送es日志时，服务器发生错误");
             return;
         }
-
         double settleBet = scenes.get(0).getBetScore();
         double betScore = scenes.get(0).getBetScoreServer();
         String pOrder = scenes.get(0).getPOrder();
+
+        BigDecimal beforeScore = DecimalUtil.getBigDecimal2(player.getUser().getScore() - gold + settleBet);
+        BigDecimal afterScore = DecimalUtil.getBigDecimal2(player.getUser().getScore());
+        gameDetail.get(0).setBalanceBefore(beforeScore);
+        gameDetail.get(0).setBalanceBeforeText(beforeScore.stripTrailingZeros().toPlainString());
+        gameDetail.get(gameDetail.size() - 1).setBalanceAfter(afterScore);
+        gameDetail.get(gameDetail.size() - 1).setBalanceAfterText(afterScore.stripTrailingZeros().toPlainString());
         JSONObject jObj = new JSONObject();
         jObj.put(ICON_DATA, JSONObject.toJSONString(gameDetail));
         jObj.put(UUID, TimeUtil.getNow());
         jObj.put(BET_MUL, player.getEMul());
         jObj.put(PARENT_ORDER, pOrder);
-        sendLogData(player, DecimalUtil.getBigDecimal2(player.getUser().getScore() - gold + settleBet).doubleValue(), settleBet, gold, pOrder, finish ? 1 : 0, jObj, betScore);
+        sendLogData(player, DecimalUtil.getBigDecimal2(player.getUser().getScore() - gold + settleBet).doubleValue(), settleBet, gold, pOrder, 1, jObj, betScore);
     }
 
     /**

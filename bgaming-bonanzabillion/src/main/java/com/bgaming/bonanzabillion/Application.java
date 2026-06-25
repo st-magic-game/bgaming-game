@@ -11,7 +11,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class Application {
 
     public static void main(String[] args) {
-        log.info("bGaming bonanza billion:single-server:version:20260617");
+        log.info("bGaming bonanza billion:single-server:version:20260625");
         SpringApplication.run(Application.class);
     }
 }

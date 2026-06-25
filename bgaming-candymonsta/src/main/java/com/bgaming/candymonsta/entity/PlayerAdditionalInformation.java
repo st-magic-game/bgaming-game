@@ -20,6 +20,8 @@ public class PlayerAdditionalInformation {
     /** 玩家最后一幅场景 */
     private String lastUi;
 
+    private int playTimes;
+
     private String scenes;
 
     /** 玩家投注金额 */

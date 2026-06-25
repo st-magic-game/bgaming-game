@@ -44,6 +44,8 @@ public class LotteryConfig {
 
     static final double[] MULTI_ICON_PRO = {0.010722846, 0.011417023, 0.0103040372, 0.033087371, 0.027682474, 0.047483668, 0.039211825, 0.032255957, 0.0130432992, 0.01000939982, 0.00000139982};
 
+    static final double[] ICON5_PRO = {0.1, 0.17, 0.18, 0.25, 0.3};
+
     static final double[] ICON7_PRO = {0.1, 0.12, 0.13, 0.10, 0.10, 0.10, 0.35};
 
     static final double[] ICON_PRO = {0.05, 0.080062003, 0.109753073, 0.117278421, 0.112926849, 0.119948568, 0.12, 0.1252, 0.163841644};
@@ -129,6 +131,16 @@ public class LotteryConfig {
             for (int i = ICON_PRO.length - 1; i >= 0; i--) {
                 pro += ICON_PRO[i];
                 if (ran < pro) return ICONS_WITH_MULTIPLE[i];
+            }
+            return ICONS_WITH_MULTIPLE[ICONS_WITH_MULTIPLE.length - 1];
+        }
+        if(factor > 1.2){
+            double[] pros = ICON5_PRO;
+            double ran = RandomUtil.nextDouble();
+            double pro = 0d;
+            for (int i = pros.length - 1; i >= 0; i--) {
+                pro += pros[i];
+                if (ran < pro) return ICONS_WITH_MULTIPLE[i + RandomUtil.nextInt(1,5)];
             }
             return ICONS_WITH_MULTIPLE[ICONS_WITH_MULTIPLE.length - 1];
         }

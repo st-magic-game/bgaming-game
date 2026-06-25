@@ -6,6 +6,7 @@ import com.bgaming.candymonsta.entity.dto.RoundHistoryDto;
 import com.bgaming.candymonsta.utils.DateTimeUtil;
 import com.bgaming.candymonsta.utils.JwtUtil;
 import com.game.base.application.service.GameService;
+import com.game.base.common.util.DecimalUtil;
 import com.game.base.common.util.TimeUtil;
 import com.game.base.domain.order.OrderPage;
 import com.game.base.domain.order.OrderRecord;
@@ -63,12 +64,14 @@ public class RoundHistoryController {
                 log.info("userId {} . history resultSize {}", userId, betList.size());
                 for (OrderRecord orderRecord : betList) {
                     String recordToken = generateToken(orderRecord, userId);
+                    BigDecimal beforeScore = DecimalUtil.getBigDecimal2(orderRecord.getLogoutScore().doubleValue()
+                            - orderRecord.getWinLose().doubleValue());
                     RoundHistoryDto history = RoundHistoryDto.builder()
                             .dateTime(DateTimeUtil.parseDateTime(orderRecord.getOrderTime()))
                             .bet(orderRecord.getStake().stripTrailingZeros().toPlainString())
                             .totalWin(orderRecord.getPayout().stripTrailingZeros().toPlainString())
                             .profit(orderRecord.getWinLose().stripTrailingZeros().toPlainString())
-                            .balanceBefore(orderRecord.getLoginScore().stripTrailingZeros().toPlainString())
+                            .balanceBefore(beforeScore.stripTrailingZeros().toPlainString())
                             .balanceAfter(orderRecord.getLogoutScore().stripTrailingZeros().toPlainString())
                             .currency(orderRecord.getCoinType())
                             .token(recordToken)

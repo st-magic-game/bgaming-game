@@ -4,6 +4,7 @@ import com.bgaming.bonanzabillion.entity.Scene;
 import com.bgaming.bonanzabillion.entity.dto.SpinResponse;
 import com.game.base.domain.player.Player;
 import com.game.base.infrastructure.persistence.entity.User;
+import lombok.Data;
 
 import java.util.List;
 import java.util.Map;
@@ -17,7 +18,7 @@ public class GameTest {
         double factor = 1.006821056d;
         for (int i = 0; i < 10; i++) {
             testPro(factor);
-//            factor -= 0.05;
+            factor += 0.05;
         }
     }
 

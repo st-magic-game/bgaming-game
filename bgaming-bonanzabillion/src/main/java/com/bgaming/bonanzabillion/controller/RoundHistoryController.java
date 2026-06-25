@@ -6,6 +6,7 @@ import com.bgaming.bonanzabillion.entity.dto.RoundHistoryDto;
 import com.bgaming.bonanzabillion.utils.DateTimeUtil;
 import com.bgaming.bonanzabillion.utils.JwtUtil;
 import com.game.base.application.service.GameService;
+import com.game.base.common.util.DecimalUtil;
 import com.game.base.common.util.TimeUtil;
 import com.game.base.domain.order.OrderPage;
 import com.game.base.domain.order.OrderRecord;
@@ -70,7 +71,8 @@ public class RoundHistoryController {
                             .bet(orderRecord.getStake().stripTrailingZeros().toPlainString())
                             .totalWin(orderRecord.getPayout().stripTrailingZeros().toPlainString())
                             .profit(orderRecord.getWinLose().stripTrailingZeros().toPlainString())
-                            .balanceBefore(orderRecord.getLoginScore().stripTrailingZeros().toPlainString())
+                            .balanceBefore(DecimalUtil.getBigDecimal2(orderRecord.getLogoutScore().doubleValue()
+                                    - orderRecord.getWinLose().doubleValue()).stripTrailingZeros().toPlainString())
                             .balanceAfter(orderRecord.getLogoutScore().stripTrailingZeros().toPlainString())
                             .currency(orderRecord.getCoinType())
                             .token(recordToken)

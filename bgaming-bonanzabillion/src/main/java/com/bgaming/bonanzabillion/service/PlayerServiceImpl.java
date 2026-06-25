@@ -8,6 +8,7 @@ import com.bgaming.bonanzabillion.entity.Scene;
 import com.bgaming.bonanzabillion.entity.dto.SpinResponse;
 import com.bgaming.bonanzabillion.mapper.PlayerAdditionalInformationMapper;
 import com.game.base.application.service.IPlayerService;
+import com.game.base.common.util.DecimalUtil;
 import com.game.base.common.util.TimeUtil;
 import com.game.base.domain.player.Player;
 import com.game.base.interfaces.dto.bgaming.LayoutData;
@@ -18,6 +19,7 @@ import org.springframework.util.StringUtils;
 
 import java.util.List;
 
+import static com.bgaming.bonanzabillion.config.LotteryConfig.SUB_UNITS;
 import static com.game.base.common.constant.GameKey.SCENE;
 
 @Slf4j
@@ -29,6 +31,7 @@ public class PlayerServiceImpl implements IPlayerService {
     public PlayerServiceImpl(PlayerAdditionalInformationMapper playerAdditionalInformationMapper) {
         this.playerAdditionalInformationMapper = playerAdditionalInformationMapper;
     }
+
     @Override
     public void savePlayerData(Player player) {
         if (player != null) {
@@ -63,23 +66,23 @@ public class PlayerServiceImpl implements IPlayerService {
         options.put("paytable", LotteryConfig.PAYTABLE);
         options.put("paytable_levels", LotteryConfig.PAY_TABLE_LEVELS);
         options.put("screen", LotteryConfig.SCREEN);
-        options.put("feature_options",LotteryConfig.FEATURE_OPTIONS);
+        options.put("feature_options", LotteryConfig.FEATURE_OPTIONS);
         options.put("special_paytable", LotteryConfig.SPECIAL_PAY_TABLE);
         options.put("special_symbols", LotteryConfig.SPECIAL_SYMBOLS);
         if (player.getExtendJson().containsKey("spinResponse")) {
             SpinResponse spinResponse = (SpinResponse) player.getExtendJson().get("spinResponse");
-            setBackUiData(gameInfo, spinResponse);
-        }else{
+            setBackUiData(gameInfo, spinResponse, player);
+        } else {
             PlayerAdditionalInformation additionalInformation = playerAdditionalInformationMapper.getAdditionalInformation(player.getUserId());
-            if(additionalInformation != null){
+            if (additionalInformation != null) {
                 String scenes = additionalInformation.getScenes();
                 String lastUi = additionalInformation.getLastUi();
                 if (StringUtils.hasText(lastUi) && StringUtils.hasText(scenes)) {
                     List<Scene> sceneList = JSONArray.parseArray(scenes, Scene.class);
                     SpinResponse spinResponse = JSONObject.parseObject(lastUi, SpinResponse.class);
-                    setBackUiData(gameInfo, spinResponse);
-                    player.getExtendJson().put(SCENE,sceneList);
-                    player.getExtendJson().put("spinResponse",spinResponse);
+                    setBackUiData(gameInfo, spinResponse, player);
+                    player.getExtendJson().put(SCENE, sceneList);
+                    player.getExtendJson().put("spinResponse", spinResponse);
                     additionalInformation.setScenes(new JSONArray().toJSONString());
                     additionalInformation.setLastUi(new JSONObject().toJSONString());
                     playerAdditionalInformationMapper.upsertLastUiByUserId(additionalInformation);
@@ -89,8 +92,9 @@ public class PlayerServiceImpl implements IPlayerService {
         log.info("userId {} ,login Data {}", player.getUserId(), gameInfo.toJSONString());
     }
 
-    private static void setBackUiData(JSONObject gameInfo, SpinResponse spinResponse) {
+    private static void setBackUiData(JSONObject gameInfo, SpinResponse spinResponse, Player player) {
         if (spinResponse != null) {
+            spinResponse.getBalance().setWallet(DecimalUtil.getBigDecimal2(player.getUser().getScore() * SUB_UNITS));
             String jsonString = JSONObject.toJSONString(spinResponse.getFlow());
             JSONObject jsonObject = JSONObject.parseObject(jsonString);
             jsonObject.put("command", "init");
