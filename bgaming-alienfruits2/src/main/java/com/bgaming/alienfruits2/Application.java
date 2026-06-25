@@ -21,7 +21,7 @@ import java.util.Map;
 public class Application implements ApplicationRunner {
 
     public static void main(String[] args) {
-        log.info("bGaming AlienFruits2-server:version:20260624");
+        log.info("bGaming AlienFruits2-server:version:20260625");
         SpringApplication.run(Application.class);
     }
 

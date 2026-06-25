@@ -268,13 +268,16 @@ public class GameTable extends TableSink {
                     betScore, 0, 0, pOrder, extData, 0, u != null);
         }
         if (finish) {
+            beforeScore = player.getUser().getScore();
             List<ApiClientResult> apiClientResults = player.getExtendDataList("apiClient",ApiClientResult.class);
             AtomicReference<Double> winGold = new AtomicReference<>((double) 0);
             apiClientResults.forEach(a -> winGold.updateAndGet(v -> v + a.getOutcome().getWin().doubleValue()));
             setCurData(player, 0, DecimalUtil.getBigDecimal2(winGold.get() / SUB_UNITS).doubleValue());
             player.setBetIdNum(1);
-            this.table.getGameService().getRabbitMqService().sendOrder(player, DecimalUtil.getBigDecimal2(beforeScore).doubleValue(), this.gameInfo,
-                    0, DecimalUtil.getBigDecimal2(winGold.get() / SUB_UNITS).doubleValue(), 1, pOrder, extData, 1, u != null);
+            if (winGold.get() > 0) {
+                this.table.getGameService().getRabbitMqService().sendOrder(player, DecimalUtil.getBigDecimal2(beforeScore).doubleValue(), this.gameInfo,
+                        0, DecimalUtil.getBigDecimal2(winGold.get() / SUB_UNITS).doubleValue(), 1, pOrder, extData, 1, u != null);
+            }
             log.info("userid = {},发送完整注单", player.getUser().getUserID());
             double stockScore = DecimalUtil.getBigDecimal2(player.getUser().getBankScore() / SUB_UNITS).doubleValue();
             sendDataLog(player,stockScore);
