@@ -1,0 +1,116 @@
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <link rel="stylesheet" th:href="${clientBase} + '/static/css/active_admin.css'"/>
+    <link rel="stylesheet" th:href="${clientBase} + '/static/css/application.css'"/>
+    <title></title>
+    <style>
+        .flight-item {
+            display: inline-block;
+            text-align: center;
+            padding: 10px;
+            background: #000;
+            border-radius: 20px;
+        }
+        .flight-arrow {
+            color: #000;
+        }
+        .flight-item-header {
+            font-size: 120%;
+            color: #0f0;
+        }
+        .flight-item-win {
+            color: #ff0;
+        }
+        body{}
+    </style>
+</head>
+<body>
+
+<h2 class="history_header">
+    Aviamasters: Round Details
+</h2>
+
+<table border="1" class="history_table" id="games_history">
+    <tbody>
+    <tr>
+        <th><h4 class="center_cell">Date/Time</h4></th>
+        <th><h4 class="center_cell">Bet</h4></th>
+        <th><h4 class="center_cell">Total Win</h4></th>
+        <th><h4 class="center_cell">Profit</h4></th>
+        <th><h4 class="center_cell">Balance Before</h4></th>
+        <th><h4 class="center_cell">Balance after</h4></th>
+        <th><h4 class="center_cell">Currency</h4></th>
+        <th><h4 class="center_cell">Used Feature</h4></th>
+    </tr>
+    <tr>
+        <td class="table_delimiter" th:text="${detail.time}"></td>
+        <td class="table_delimiter" th:text="${detail.betText}"></td>
+        <td class="table_delimiter" th:text="${detail.totalWinText}"></td>
+        <td class="table_delimiter" th:text="${detail.profitText}"></td>
+        <td class="table_delimiter" th:text="${detail.balanceBeforeText}"></td>
+        <td class="table_delimiter" th:text="${detail.balanceAfterText}"></td>
+        <td class="table_delimiter" th:text="${detail.currency}"></td>
+        <td class="table_delimiter">
+            <span th:text="${detail.usedFeature != null ? detail.usedFeature : 'No'}"></span>
+        </td>
+    </tr>
+    <tr>
+        <td class="round_view" colspan="8">
+            <div class="bet-dump-based-result">
+                <div>
+                    <div>Seed:
+                        <th:block th:text="${detail.getRoundProcessResult().getSeed()}"></th:block>
+                    </div>
+                    <div>Total bet:
+                        <th:block th:text="${detail.betText}"></th:block>
+                        <th:block th:text="${detail.currency}"></th:block>
+                    </div>
+                    <div class="flight-item">
+                        <div class="flight-item-header" style="color: rgb(0, 255, 0);">✈</div>
+                        <div class="flight-item-win">
+                            <th:block th:text="${detail.betText}"></th:block>
+                            <th:block th:text="${detail.currency}"></th:block>
+                        </div>
+                    </div>
+                    <th:block th:each="event : ${events}">
+                        <span class="flight-arrow">➤</span>
+                        <th:block th:if="${event.eatType.equals('DECREASE')}">
+                            <div class="flight-item">
+                                <div class="flight-item-header" style="color: rgb(255, 0, 0);" th:text="x0.5"></div>
+                                <div class="flight-item-win">
+                                    <th:block th:text="${event.afterScore / 100}"></th:block>
+                                    <th:block th:text="${detail.currency}"></th:block>
+                                </div>
+                            </div>
+                        </th:block>
+                        <th:block th:unless="${event.eatType.equals('DECREASE')}">
+                            <div class="flight-item">
+                                <div class="flight-item-header" style="color: rgb(0, 255, 0);" th:text="${event.eatDisplay}"></div>
+                                <div class="flight-item-win">
+                                    <th:block th:text="${event.afterScore / 100}"></th:block>
+                                    <th:block th:text="${detail.currency}"></th:block>
+                                </div>
+                            </div>
+                        </th:block>
+                    </th:block>
+                    <span class="flight-arrow">➤</span>
+                    <div class="flight-item">
+                        <th:block th:if="${detail.getTotalWin().doubleValue() > 0}">
+                            <div class="flight-item-header" style="color: rgb(0, 255, 0);">💰</div>
+                        </th:block>
+                        <th:block th:unless="${detail.getTotalWin().doubleValue() > 0}">
+                            <div class="flight-item-header" style="color: rgb(255, 0, 0);">💥</div>
+                        </th:block>
+                        <div class="flight-item-win">
+                            <th:block th:text="${detail.totalWinText}"></th:block>
+                            <th:block th:text="${detail.currency}"></th:block>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </td>
+    </tr>
+    </tbody>
+</table>
+</body>
+</html>

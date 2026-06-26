@@ -1,0 +1,2 @@
+tableSink: com.bgaming.aviamasters.logic.GameTable
+timeout: 900000
