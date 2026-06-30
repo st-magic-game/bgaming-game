@@ -231,6 +231,9 @@ public class AlienFruits2Context {
             if (payTable.getType() == symbol) {
                 Map<String, BigDecimal> multiplierMap = payTable.getMultiplierMap();
                 int key = Math.min(12,num / 2 * 2);
+                if (symbol == SCATTER.getIndex()) {
+                    key = num;
+                }
                 return multiplierMap.get(String.valueOf(key));
             }
         }
