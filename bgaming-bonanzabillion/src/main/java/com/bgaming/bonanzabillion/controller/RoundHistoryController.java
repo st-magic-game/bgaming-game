@@ -25,7 +25,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import javax.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
 import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 import static com.game.base.common.constant.Protocol.GAME_SUB_LOG_DETAIL;
@@ -119,10 +118,10 @@ public class RoundHistoryController {
             }else{
                 RoundDetailDto start = details.get(0);
                 RoundDetailDto end = details.get(details.size() - 1);
-                BigDecimal totalWin = details.stream().map(RoundDetailDto::getTotalWin).reduce(BigDecimal::add).get();
+                BigDecimal totalWin = details.stream().map(RoundDetailDto::getTotalRoundWin).reduce(BigDecimal::add).get();
                 roundDetailDto.setBalanceAfterText(end.getBalanceAfterText());
                 roundDetailDto.setBalanceBeforeText(start.getBalanceBeforeText());
-                roundDetailDto.setProfitText(end.getBalanceAfter().subtract(start.getBalanceBefore()).stripTrailingZeros().toPlainString());
+                roundDetailDto.setProfitText(totalWin.subtract(start.getBet()).stripTrailingZeros().toPlainString());
                 roundDetailDto.setTotalWin(totalWin);
                 roundDetailDto.setTotalWinText(totalWin.stripTrailingZeros().toPlainString());
                 roundDetailDto.setCurrency(start.getCurrency());

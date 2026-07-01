@@ -28,6 +28,8 @@ public class RoundDetailDto {
 
     private BigDecimal totalWin;
 
+    private BigDecimal totalRoundWin = BigDecimal.ZERO;
+
     private BigDecimal profit;
 
     private BigDecimal balanceBefore;
