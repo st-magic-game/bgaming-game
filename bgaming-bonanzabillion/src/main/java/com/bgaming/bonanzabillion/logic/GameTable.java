@@ -252,6 +252,8 @@ public class GameTable extends TableSink {
             RoundDetailDto roundDetailDto = new RoundDetailDto();
             if (spin) {
                 roundDetailDto.setSpin(spin);
+                roundDetailDto.setTotalRoundWin(DecimalUtil.getBigDecimal2(scene.getGold()));
+                roundDetailDto.setTotalRoundWinText(DecimalUtil.getBigDecimal2(scene.getGold()).stripTrailingZeros().toPlainString());
                 spin = false;
             }
             roundDetailDto.setTime(DateTimeUtil.parseDateTime(new Timestamp(TimeUtil.getNow()).toLocalDateTime()));
@@ -267,7 +269,6 @@ public class GameTable extends TableSink {
                 realWin = reduce.get();
             }
             BigDecimal realProfit = DecimalUtil.getBigDecimal2(scene.getGold() - scene.getBetScore());
-            roundDetailDto.setTotalRoundWinText(DecimalUtil.getBigDecimal2(scene.getGold() / scene.getDoubleMul()).stripTrailingZeros().toPlainString());
             roundDetailDto.setBetText(betScoreText(scene));
             roundDetailDto.setOpenFreeNum(scene.getOpenFreeNum());
             roundDetailDto.setBet(realBet);
@@ -288,11 +289,11 @@ public class GameTable extends TableSink {
                     roundDetailDto.setScatterWin(scene.getScatterWin());
                     roundDetailDto.setScatterWinText(scene.getScatterWin().stripTrailingZeros().toPlainString());
                 }
-                String multiWinText = "0";
+                BigDecimal multipleWin = BigDecimal.ZERO;
                 if (scene.getDoubleMul() > 1) {
-                    multiWinText = DecimalUtil.getBigDecimal2(scene.getGold() * (scene.getDoubleMul() - 1) / scene.getDoubleMul()).stripTrailingZeros().toPlainString();
+                    multipleWin = DecimalUtil.getBigDecimal2(scene.getGold() * (scene.getDoubleMul() - 1) / scene.getDoubleMul());
                 }
-                roundDetailDto.setMultipleWinText(multiWinText);
+                roundDetailDto.setMultipleWinText(multipleWin.stripTrailingZeros().toPlainString());
             }
             roundDetailDto.setSymbols(castDetailSymbol(scene.getTmpRotarys().get(i)));
             roundDetailDtoList.add(roundDetailDto);
