@@ -34,7 +34,7 @@ public class LotteryConfig {
 
     public static final double LONG_LINES_PRO = 0.005;
 
-    public static final double[] SCATTER_PRO = {0.2, 0.02, 0.00121};
+    public static final double[] SCATTER_PRO = {0.12, 0.012, 0.001021};
 
     public static final double[] COINS_PRO = {0.1, 0.1, 0.1, 0.05, 0.005, 0.003};
 
@@ -273,10 +273,10 @@ public class LotteryConfig {
         return 0;
     }
 
-    public static int getCoinsSize() {
+    public static int getCoinsSize(double fixed) {
         double random = RandomUtil.nextDouble();
         for (int i = COINS_PRO.length - 1; i >= 0; i--) {
-            if (random > COINS_PRO[i]) continue;
+            if (random > COINS_PRO[i] * fixed) continue;
 
             return i + 1;
         }

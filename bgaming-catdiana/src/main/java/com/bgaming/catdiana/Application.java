@@ -11,7 +11,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class Application {
 
     public static void main(String[] args) {
-        log.info("bGaming cat diana:single-server:version:20260630");
+        log.info("bGaming cat diana:single-server:version:20260702");
         SpringApplication.run(Application.class);
     }
 }

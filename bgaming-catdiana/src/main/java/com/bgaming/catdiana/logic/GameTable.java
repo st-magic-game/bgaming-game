@@ -748,7 +748,7 @@ public class GameTable extends TableSink {
 
             respin.setNameIdxes(sceneIconVo.getNameIdxes());
             int installNewSize = getInstallNewCoinSize(factor);
-            ;
+
             int min = Math.min(installNewSize, canInstallIndex.size());
             if (canInstallIndex.size() - min < 2) {
                 min = 0;
@@ -914,14 +914,14 @@ public class GameTable extends TableSink {
             installScatter(type, rotary, scatterSize, nameIndexes);
 
             if (type == 0) {
-                int coinsSize = getCoinsSize();
+                int coinsSize = getCoinsSize(factor < 1 ? factor : 1);
                 installCoins(rotary, coinsSize, nameIndexes);
             }
         }
         int wildSize = LotteryConfig.getWildSize(type);
         setWildIcon(rotary, wildSize, type, nameIndexes);
 
-        int freeIcon = getRandomNormalIcon(0.4 * factor);
+        int freeIcon = getRandomNormalIcon(factor);
         //随机填充1，2，4，5个转轴的图标
         for (int i = 0; i < COLUMNS; i++) {
             if (type == 0 && i == 2) continue;

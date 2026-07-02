@@ -16,7 +16,7 @@ public class GameTest {
         double factor = 1.006821056d;
         for (int i = 0; i < 10; i++) {
             testPro(factor);
-//            factor -= 0.05;
+            factor -= 0.05;
         }
     }
 
@@ -51,7 +51,7 @@ public class GameTest {
                 List<Scene> scenes = getScenes(player);
                 boolean hasFree = scenes.get(0).getOpenFreeNum() > 0;
                 boolean hasBonus = scenes.get(0).getRespinCount() > 0;
-                SpinResponse response = table.generateResponse(scenes, true, player.getUser().getScore());
+//                SpinResponse response = table.generateResponse(scenes, true, player.getUser().getScore());
                 double winTemp = scenes.stream().map(Scene::getGold).reduce(Double::sum).get();
                 if (hasFree) {
                     freeWin += winTemp;
