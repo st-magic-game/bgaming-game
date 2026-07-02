@@ -21,6 +21,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
 
+import static com.bgaming.alienfruits.logic.AlienFruitsContext.SUB_UNITS;
 import static com.game.base.common.constant.GameKey.*;
 
 @Slf4j
@@ -39,7 +40,7 @@ public class GameTable extends TableSink {
 
     @Override
     public double getWinGold() {
-        return result.getOutcome().getWin().doubleValue() / AlienFruitsContext.SUB_UNITS;
+        return result.getOutcome().getWin().doubleValue() / SUB_UNITS;
     }
 
     @Override
@@ -58,9 +59,9 @@ public class GameTable extends TableSink {
         if (player.extendDataContainsKey("beforeScore")) {
             beforeScore = player.getExtendData("beforeScore", Double.class);
         }
-        BigDecimal balance = DecimalUtil.getBigDecimal2((beforeScore  - stake) * AlienFruitsContext.SUB_UNITS);
+        BigDecimal balance = DecimalUtil.getBigDecimal2((beforeScore  - stake) * SUB_UNITS);
         if (inFree) {
-            balance = DecimalUtil.getBigDecimal2(player.getUser().getScore() * AlienFruitsContext.SUB_UNITS);
+            balance = DecimalUtil.getBigDecimal2(player.getUser().getScore() * SUB_UNITS);
         }
         result.setBalance(new Balance(DecimalUtil.getBigDecimal2(totalScore.get()),balance));
     }
@@ -121,20 +122,20 @@ public class GameTable extends TableSink {
                     log.error("userid = {},作弊，玩家当前不在免费场中",userId);
                     return null;
                 }
-                stake = player.getUser().getBankScore();
+                stake = player.getEBetScore();
                 inFree = true;
                 freeNum = player.getEFreeNum();
                 totalFreeNum = player.getExtendData("totalFreeNum",Integer.class);
                 apiClientResults = player.getExtendDataList("apiClient",ApiClientResult.class);
             }
             stake = DecimalUtil.getBigDecimal2(stake).doubleValue();
-            orderStake = DecimalUtil.getBigDecimal2(stake / AlienFruitsContext.SUB_UNITS).doubleValue();
+            orderStake = DecimalUtil.getBigDecimal2(stake / SUB_UNITS).doubleValue();
             if (cheatingDetection(player, stake)) return null;
             String bonusUby = "No";
             if (!inFree) {
-                realStake = DecimalUtil.getBigDecimal2(stake / AlienFruitsContext.SUB_UNITS).doubleValue();
+                realStake = DecimalUtil.getBigDecimal2(stake / SUB_UNITS).doubleValue();
                 if (bonus_buy) {
-                    realStake = DecimalUtil.getBigDecimal2(stake / AlienFruitsContext.GLOBAL_CONFIG.getBaseBet() * AlienFruitsContext.GLOBAL_CONFIG.getFreeSpinBuy() / AlienFruitsContext.SUB_UNITS).doubleValue();
+                    realStake = DecimalUtil.getBigDecimal2(stake / AlienFruitsContext.GLOBAL_CONFIG.getBaseBet() * AlienFruitsContext.GLOBAL_CONFIG.getFreeSpinBuy() / SUB_UNITS).doubleValue();
                     bonusUby = "Freespin buy";
                 }
             }
@@ -174,7 +175,7 @@ public class GameTable extends TableSink {
                 winGold = this.getWinGold();
             } while (winGold - realStake > 0 && reset(orderStake, winGold, player, 10, 300, 3, 100));
 
-            player.getUser().setBankScore(stake);
+            player.setEBetScore(stake);
             GameContext.newGold(player, orderStake, realStake, winGold);
             if (realStake > player.getUser().getScore()) {
                 realStake = player.getUser().getScore();
@@ -249,14 +250,14 @@ public class GameTable extends TableSink {
             List<ApiClientResult> apiClientResults = player.getExtendDataList("apiClient",ApiClientResult.class);
             AtomicReference<Double> winGold = new AtomicReference<>((double) 0);
             apiClientResults.forEach(a -> winGold.updateAndGet(v -> v + a.getOutcome().getWin().doubleValue()));
-            setCurData(player, 0, DecimalUtil.getBigDecimal2(winGold.get() / AlienFruitsContext.SUB_UNITS).doubleValue());
+            setCurData(player, 0, DecimalUtil.getBigDecimal2(winGold.get() / SUB_UNITS).doubleValue());
             player.setBetIdNum(1);
             if (winGold.get() > 0) {
                 this.table.getGameService().getRabbitMqService().sendOrder(player, DecimalUtil.getBigDecimal2(beforeScore).doubleValue(), this.gameInfo,
-                        0, DecimalUtil.getBigDecimal2(winGold.get() / AlienFruitsContext.SUB_UNITS).doubleValue(), 1, pOrder, extData, 1, u != null);
+                        0, DecimalUtil.getBigDecimal2(winGold.get() / SUB_UNITS).doubleValue(), 1, pOrder, extData, 1, u != null);
             }
             log.info("userid = {},发送完整注单", player.getUser().getUserID());
-            double stockScore = DecimalUtil.getBigDecimal2(player.getUser().getBankScore() / AlienFruitsContext.SUB_UNITS).doubleValue();
+            double stockScore = DecimalUtil.getBigDecimal2(player.getEBetScore() / SUB_UNITS).doubleValue();
             sendDataLog(player,stockScore);
         }
     }

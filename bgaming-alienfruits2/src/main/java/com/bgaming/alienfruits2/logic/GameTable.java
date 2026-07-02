@@ -138,7 +138,7 @@ public class GameTable extends TableSink {
                     log.error("userid = {},作弊，玩家当前不在免费场中",userId);
                     return null;
                 }
-                stake = player.getUser().getBankScore();
+                stake = player.getEBetScore();
                 inFree = true;
                 freeNum = player.getEFreeNum();
                 totalFreeNum = player.getExtendData("totalFreeNum",Integer.class);
@@ -197,7 +197,7 @@ public class GameTable extends TableSink {
                 winGold = this.getWinGold();
             } while (winGold - realStake > 0 && reset(orderStake, winGold, player, 10, 300, 3, 100));
 
-            player.getUser().setBankScore(stake);
+            player.setEBetScore(stake);
             GameContext.newGold(player, orderStake, realStake, winGold);
             if (realStake > player.getUser().getScore()) {
                 realStake = player.getUser().getScore();
@@ -279,7 +279,7 @@ public class GameTable extends TableSink {
                         0, DecimalUtil.getBigDecimal2(winGold.get() / SUB_UNITS).doubleValue(), 1, pOrder, extData, 1, u != null);
             }
             log.info("userid = {},发送完整注单", player.getUser().getUserID());
-            double stockScore = DecimalUtil.getBigDecimal2(player.getUser().getBankScore() / SUB_UNITS).doubleValue();
+            double stockScore = DecimalUtil.getBigDecimal2(player.getEBetScore() / SUB_UNITS).doubleValue();
             sendDataLog(player,stockScore);
         }
 //        sendSingleDataLog(player,betScore,beforeScore,stockScore);

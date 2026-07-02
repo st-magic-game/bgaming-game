@@ -60,7 +60,7 @@ public class PlayerServiceImpl implements IPlayerService {
             if (player.extendDataContainsKey("beforeScore")) {
                 beforeScore = player.getExtendData("beforeScore", Double.class);
             }
-            double stake = player.getUser().getBankScore();
+            double stake = player.getEBetScore();
             PlayerAdditionalInformation pai = new PlayerAdditionalInformation();
             pai.setUserId(player.getUserId()).setLastUi(JSONObject.toJSONString(apiClientResults))
                             .setBetScore(stake).setFreeNum(freeNum).setTotalFreeNum(totalFreeNum)
@@ -81,11 +81,6 @@ public class PlayerServiceImpl implements IPlayerService {
         options.put("feature_options", getFeatureOptions());
         options.put("special_symbols", getSpecialSymbols());
         options.put("special_paytable",JSONObject.parseObject(SPECIAL_PAY_TABLE));
-//        gameInfo.put("options",JSONObject.parseObject(test));
-
-//        JSONObject currency = options.getJSONObject("currency");
-//        currency.put("code","FUN");
-//        currency.put("symbol","FUN");
         restoreData(player,gameInfo);
     }
 
@@ -120,6 +115,7 @@ public class PlayerServiceImpl implements IPlayerService {
                 player.setExtendData("totalFreeNum",pai.getTotalFreeNum());
                 player.setExtendData("bonusBuy",pai.getUsedFeature());
                 player.setExtendData("beforeScore",DecimalUtil.getBigDecimal2(player.getUser().getScore()));
+                player.setEBetScore(DecimalUtil.getBigDecimal2(pai.getBetScore()).doubleValue());
                 if (!apiClientResults.isEmpty()) {
                     ApiClientResult apiClientResult = apiClientResults.get(apiClientResults.size() - 1);
                     if (!apiClientResult.getFlow().getState().equals("closed")) {
