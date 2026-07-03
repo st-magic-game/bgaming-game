@@ -1,9 +1,9 @@
-package com.bgaming.alienfruits2.logic;
+package com.bgaming.carnivalbonanza.logic;
 
 import com.alibaba.fastjson.JSONObject;
 
-import com.bgaming.alienfruits2.entity.client.ApiClientResult;
-import com.bgaming.alienfruits2.entity.client.Balance;
+import com.bgaming.carnivalbonanza.entity.client.ApiClientResult;
+import com.bgaming.carnivalbonanza.entity.client.Balance;
 import com.game.base.common.constant.GameKey;
 import com.game.base.common.util.DecimalUtil;
 import com.game.base.common.util.TimeUtil;
@@ -21,7 +21,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
 
-import static com.bgaming.alienfruits2.logic.AlienFruits2Context.*;
+import static com.bgaming.carnivalbonanza.logic.CarnivalBonanzaContext.SUB_UNITS;
 import static com.game.base.common.constant.GameKey.*;
 
 @Slf4j
@@ -40,16 +40,16 @@ public class GameTable extends TableSink {
 
     @Override
     public double getWinGold() {
-        return result.getOutcome().getWin().doubleValue() / AlienFruits2Context.SUB_UNITS;
+        return result.getOutcome().getWin().doubleValue() / SUB_UNITS;
     }
 
     @Override
     public JSONObject codeResultData(Player player, double betScore, double factor) {
         return null;
     }
-    public void codeResultData(Player player, double betScore, double factor, boolean bonus_buy, boolean freespin_chance,boolean inFree) {
+    public void codeResultData(Player player, double betScore, double factor, boolean bonus_buy,boolean inFree, boolean freespin_chance) {
         String pOrder = nextId();
-        List<ApiClientResult> apiClientResults = generateApiResult(player, betScore, factor, bonus_buy, freespin_chance, pOrder);
+        List<ApiClientResult> apiClientResults = CarnivalBonanzaContext.generateApiResult(player, betScore, factor, bonus_buy, freespin_chance,pOrder);
         result = apiClientResults.get(apiClientResults.size() - 1);
         double stake = player.getExtendData("realStake", Double.class);
 
@@ -59,7 +59,7 @@ public class GameTable extends TableSink {
         if (player.extendDataContainsKey("beforeScore")) {
             beforeScore = player.getExtendData("beforeScore", Double.class);
         }
-        BigDecimal balance = DecimalUtil.getBigDecimal2((beforeScore  - stake) * AlienFruits2Context.SUB_UNITS);
+        BigDecimal balance = DecimalUtil.getBigDecimal2((beforeScore  - stake) * SUB_UNITS);
         if (inFree) {
             balance = DecimalUtil.getBigDecimal2(player.getUser().getScore() * SUB_UNITS);
         }
@@ -74,16 +74,6 @@ public class GameTable extends TableSink {
     @Override
     public JSONObject codeLogData(Player player, GameInfo roomInfo) {
         return null;
-    }
-    public JSONObject codeLogData(Player player, GameInfo roomInfo,double beforeScore,double betScore) {
-        JSONObject jsonObject = new JSONObject(true);
-        List<ApiClientResult> clientResults = new ArrayList<>();
-        clientResults.add(result);
-        jsonObject.put(ICON_DATA, JSONObject.toJSONString(generateRoundDetail(clientResults,beforeScore,player,betScore)));
-        jsonObject.put(UUID, TimeUtil.getNow());
-        jsonObject.put(BET_MUL, 1);
-        jsonObject.put(PARENT_ORDER, result.getFlow().getRound_id());
-        return jsonObject;
     }
 
     @Override
@@ -145,17 +135,17 @@ public class GameTable extends TableSink {
                 apiClientResults = player.getExtendDataList("apiClient",ApiClientResult.class);
             }
             stake = DecimalUtil.getBigDecimal2(stake).doubleValue();
-            orderStake = DecimalUtil.getBigDecimal2(stake / AlienFruits2Context.SUB_UNITS).doubleValue();
+            orderStake = DecimalUtil.getBigDecimal2(stake / SUB_UNITS).doubleValue();
             if (cheatingDetection(player, stake)) return null;
             String bonusUby = "No";
             if (!inFree) {
-                realStake = DecimalUtil.getBigDecimal2(stake / AlienFruits2Context.SUB_UNITS).doubleValue();
+                realStake = DecimalUtil.getBigDecimal2(stake / SUB_UNITS).doubleValue();
                 if (bonus_buy) {
-                    realStake = DecimalUtil.getBigDecimal2(stake / GLOBAL_CONFIG.getBaseBet() * GLOBAL_CONFIG.getFreeSpinBuy() / AlienFruits2Context.SUB_UNITS).doubleValue();
+                    realStake = DecimalUtil.getBigDecimal2(stake / CarnivalBonanzaContext.GLOBAL_CONFIG.getBaseBet() * CarnivalBonanzaContext.GLOBAL_CONFIG.getFreeSpinBuy() / SUB_UNITS).doubleValue();
                     bonusUby = "Freespin buy";
                 }
                 if (freespin_chance) {
-                    realStake = DecimalUtil.getBigDecimal2(stake / GLOBAL_CONFIG.getBaseBet() * GLOBAL_CONFIG.getBonusBuy() / AlienFruits2Context.SUB_UNITS).doubleValue();
+                    realStake = DecimalUtil.getBigDecimal2(stake / CarnivalBonanzaContext.GLOBAL_CONFIG.getBaseBet() * CarnivalBonanzaContext.GLOBAL_CONFIG.getBonusBuy() / CarnivalBonanzaContext.SUB_UNITS).doubleValue();
                     bonusUby = "Freespin chance";
                 }
             }
@@ -178,11 +168,12 @@ public class GameTable extends TableSink {
 
             this.lastStartTime = TimeUtil.getNow();
             double factor = GameContext.nextDouble(player,orderStake);
-            if (inFree) {
-                factor *= 2;
+            if (inFree && !apiClientResults.isEmpty() && !apiClientResults.get(0).getFlow().getPurchased_feature().isEmpty() &&
+                    apiClientResults.get(0).getFlow().getPurchased_feature().get("name").equals("freespin_buy")) {
+                factor *= 1.35;
             }
             if (freespin_chance) {
-                factor *= 1.25;
+                factor *= 1.05;
             }
             double winGold;
             int recount = 0;
@@ -193,7 +184,7 @@ public class GameTable extends TableSink {
                 player.setExtendData("freeNum",freeNum);
                 player.getExtendJson().put("apiClient",apiClientResults);
                 player.setExtendData("totalFreeNum",totalFreeNum);
-                this.codeResultData(player, stake, factor,bonus_buy,freespin_chance,inFree);
+                this.codeResultData(player, stake, factor,bonus_buy,inFree,freespin_chance);
                 winGold = this.getWinGold();
             } while (winGold - realStake > 0 && reset(orderStake, winGold, player, 10, 300, 3, 100));
 
@@ -280,14 +271,9 @@ public class GameTable extends TableSink {
             double stockScore = DecimalUtil.getBigDecimal2(player.getEBetScore() / SUB_UNITS).doubleValue();
             sendDataLog(player,stockScore);
         }
-//        sendSingleDataLog(player,betScore,beforeScore,stockScore);
     }
 
-    private void sendSingleDataLog(Player player,double betScore,double beforeScore,double stockScore) {
-        JSONObject jsonObject = codeLogData(player, gameInfo,beforeScore,betScore);
-        String pOrder = String.valueOf(result.getFlow().getRound_id());
-        sendLogData(player, beforeScore, betScore, getWinGold(), pOrder, 0, jsonObject, stockScore);
-    }
+
 
     private void sendDataLog(Player player,double stockScore) {
         double beforeScore = DecimalUtil.getBigDecimal2(player.getExtendData("beforeScore", Double.class)).doubleValue();
@@ -295,7 +281,7 @@ public class GameTable extends TableSink {
 
         JSONObject jsonObject = new JSONObject();
         List<ApiClientResult> apiClientResults = player.getExtendDataList("apiClient",ApiClientResult.class);
-        jsonObject.put(ICON_DATA, JSONObject.toJSONString(generateRoundDetail(apiClientResults,beforeScore,player,realStake)));
+        jsonObject.put(ICON_DATA, JSONObject.toJSONString(CarnivalBonanzaContext.generateRoundDetail(apiClientResults,beforeScore,player,realStake)));
         jsonObject.put(UUID, TimeUtil.getNow());
         jsonObject.put(BET_MUL, 1);
         jsonObject.put(PARENT_ORDER, result.getFlow().getRound_id());

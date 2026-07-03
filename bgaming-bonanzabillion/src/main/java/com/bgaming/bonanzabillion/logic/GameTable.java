@@ -25,7 +25,6 @@ import com.game.base.interfaces.dto.UsePrize;
 import com.game.base.interfaces.dto.bgaming.BgBalance;
 import com.game.base.interfaces.dto.bgaming.FlowData;
 import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.NotNull;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
@@ -202,7 +201,6 @@ public class GameTable extends TableSink {
         log.info("userid = {},发送单场注单", player.getUser().getUserID());
     }
 
-    @NotNull
     private JSONObject generateExtData(Player player, List<Scene> scenes, boolean finish) {
         Scene firstScene = scenes.get(0);
         JSONObject extendData = getExtendString(player, firstScene.getPOrder());

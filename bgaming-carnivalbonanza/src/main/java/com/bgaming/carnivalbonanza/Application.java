@@ -1,8 +1,8 @@
-package com.bgaming.alienfruits;
+package com.bgaming.carnivalbonanza;
 
 import com.alibaba.fastjson.JSONObject;
-import com.bgaming.alienfruits.entity.client.ApiClientResult;
-import com.bgaming.alienfruits.logic.AlienFruitsContext;
+import com.bgaming.carnivalbonanza.entity.client.ApiClientResult;
+import com.bgaming.carnivalbonanza.logic.CarnivalBonanzaContext;
 import com.game.base.domain.player.Player;
 import com.game.base.infrastructure.persistence.entity.User;
 import lombok.extern.slf4j.Slf4j;
@@ -16,12 +16,12 @@ import java.util.List;
 import java.util.Map;
 
 @Slf4j
-@MapperScan(value = {"com.bgaming.alienfruits.mapper"})
+@MapperScan(value = {"com.bgaming.carnivalbonanza.mapper"})
 @SpringBootApplication
 public class Application implements ApplicationRunner {
 
     public static void main(String[] args) {
-        log.info("bGaming AlienFruits-server:version:20260703");
+        log.info("bGaming AlienFruits-server:version:20260701");
         SpringApplication.run(Application.class);
     }
 
@@ -38,9 +38,9 @@ public class Application implements ApplicationRunner {
 
         int num = 10000;
         double stake = 20;
-        boolean bonus_buy = true;
-        boolean freespin_chance = false;
-        double v = 1.45;
+        boolean bonus_buy = false;
+        boolean freespin_chance = true;
+        double v = 1.05;
 
         int prizeNum = 0;
         int freeNum = 0;
@@ -50,7 +50,7 @@ public class Application implements ApplicationRunner {
         boolean use = true;
         int spinNum = 0;
         for (int i = 0; i < num; i++) {
-            List<ApiClientResult> clientResult = AlienFruitsContext.generateApiResult(player,stake, v, bonus_buy,"1");
+            List<ApiClientResult> clientResult = CarnivalBonanzaContext.generateApiResult(player,stake, v, bonus_buy,freespin_chance,"1");
             if (use) {
                 if (bonus_buy) {
                     totalBet += (stake * 100);

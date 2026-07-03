@@ -252,10 +252,8 @@ public class GameTable extends TableSink {
             apiClientResults.forEach(a -> winGold.updateAndGet(v -> v + a.getOutcome().getWin().doubleValue()));
             setCurData(player, 0, DecimalUtil.getBigDecimal2(winGold.get() / SUB_UNITS).doubleValue());
             player.setBetIdNum(1);
-            if (winGold.get() > 0) {
-                this.table.getGameService().getRabbitMqService().sendOrder(player, DecimalUtil.getBigDecimal2(beforeScore).doubleValue(), this.gameInfo,
-                        0, DecimalUtil.getBigDecimal2(winGold.get() / SUB_UNITS).doubleValue(), 1, pOrder, extData, 1, u != null);
-            }
+            this.table.getGameService().getRabbitMqService().sendOrder(player, DecimalUtil.getBigDecimal2(beforeScore).doubleValue(), this.gameInfo,
+                    0, DecimalUtil.getBigDecimal2(winGold.get() / SUB_UNITS).doubleValue(), 1, pOrder, extData, 1, u != null);
             log.info("userid = {},发送完整注单", player.getUser().getUserID());
             double stockScore = DecimalUtil.getBigDecimal2(player.getEBetScore() / SUB_UNITS).doubleValue();
             sendDataLog(player,stockScore);

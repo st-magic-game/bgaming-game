@@ -1,0 +1,46 @@
+symbols:
+  - index: 0
+    type: 0
+    weight: 0.05
+    name: "h1"
+  - index: 1
+    type: 0
+    weight: 0.1
+    name: "h2"
+  - index: 2
+    type: 0
+    weight: 0.2
+    name: "h3"
+  - index: 3
+    type: 0
+    weight: 0.3
+    name: "h4"
+  - index: 4
+    type: 0
+    weight: 0.4
+    name: "l1"
+  - index: 5
+    type: 0
+    weight: 0.52
+    name: "l2"
+  - index: 6
+    type: 0
+    weight: 0.64
+    name: "l3"
+  - index: 7
+    type: 0
+    weight: 0.8
+    name: "l4"
+  - index: 8
+    type: 0
+    weight: 1
+    name: "l5"
+  - index: 9
+    type: 1
+    weight: 1
+    name: "scatter"
+  - index: 10
+    type: 2
+    weight: 1
+    name: "bomb"
+
