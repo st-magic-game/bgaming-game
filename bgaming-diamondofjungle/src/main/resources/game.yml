@@ -1,0 +1,2 @@
+tableSink: com.bgaming.diamondofjungle.logic.GameTable
+timeout: 900000

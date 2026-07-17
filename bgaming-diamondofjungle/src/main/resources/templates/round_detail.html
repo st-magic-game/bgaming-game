@@ -1,0 +1,137 @@
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <link rel="stylesheet"
+          th:href="${clientBase} + '/static/css/active_admin.css'"/>
+    <link rel="stylesheet"
+          th:href="${clientBase} + '/static/css/application.css'"/>
+    <title></title>
+</head>
+<body>
+
+<h2 class='history_header'
+    th:text="${gameName} + ': Round Details'">
+</h2>
+
+<table border="1"
+       class="history_table"
+       id="games_history">
+    <tbody>
+    <tr>
+        <th><h4 class="center_cell">Date/Time</h4></th>
+        <th><h4 class="center_cell">Bet</h4></th>
+        <th><h4 class="center_cell">Total Win</h4></th>
+        <th><h4 class="center_cell">Profit</h4></th>
+        <th><h4 class="center_cell">Balance Before</h4></th>
+        <th><h4 class="center_cell">Balance after</h4></th>
+        <th><h4 class="center_cell">Currency</h4></th>
+        <th><h4 class="center_cell">Used Feature</h4></th>
+        <th><h4 class="center_cell">Volatility</h4></th>
+    </tr>
+    <tr>
+        <td class="table_delimiter"
+            th:text="${detail.time}"></td>
+        <td class="table_delimiter"
+            th:text="${detail.betText}"></td>
+        <td class="table_delimiter"
+            th:text="${detail.totalWinText}"></td>
+        <td class="table_delimiter"
+            th:text="${detail.profitText}"></td>
+        <td class="table_delimiter"
+            th:text="${detail.balanceBeforeText}"></td>
+        <td class="table_delimiter"
+            th:text="${detail.balanceAfterText}"></td>
+        <td class="table_delimiter"
+            th:text="${detail.currency}"></td>
+        <td class="table_delimiter">
+            <span th:text="${detail.featureName}"></span>
+        </td>
+        <td class="table_delimiter"
+            th:text="${detail.volatility}"></td>
+    </tr>
+    <tr>
+        <td colspan="9" class="round_view">
+            <div th:each="detail : ${details}" class="round_details aztec_clusters">
+                <div class="round_details diamond_of_jungle">
+                    <div class="slots_spin">
+                        <div class="slots_outcome columns-5 rows-3">
+                            <div th:each="symbol : ${detail.symbols}"
+                                 th:class="'diamond_of_jungle-' + ${symbol}">
+                            </div>
+                        </div>
+                        <div class="bets">
+                            <th:block th:if="${detail.type > 0}">
+                                <strong>Super Freespins</strong>
+                                <br>
+                            </th:block>
+                            Total Bet
+                            <th:block th:text="${detail.betText}"></th:block>
+                            <th:block
+                                    th:if="${detail.type == 0 and detail.scatterWin != null and detail.scatterWin > 0}">
+                                <br>
+                                Ways Bet
+                                <span th:text="${detail.baseBetText}"></span>
+                            </th:block>
+                            <br>
+                            Total Win
+                            <th:block th:text="${detail.totalWinText}"></th:block>
+                            <th:block th:if="${detail.scatterWin != null and detail.scatterWin > 0}">
+                                <br>
+                                Issued Freespins
+                                <span th:text="${detail.openFreeNum}"></span>
+                            </th:block>
+                        </div>
+                        <div class="payout" th:if="${not #lists.isEmpty(detail.winLines)}">
+                            <th:block th:if="${detail.doubleMul > 1}">
+                                <strong>Multiplier</strong>
+                                [[${detail.doubleMul}]]
+                                <br>
+                            </th:block>
+                            Win ways
+                            <th:block th:if="${detail.scatterWin != null and detail.scatterWin > 0}">
+                                Scatters Win
+                                <ul>
+                                    <div class="flex-display">
+                                        [[${detail.scatterSize}]]
+                                        <div class="small-symbol">
+                                            <div class="diamond_of_jungle-scatter"></div>
+                                        </div>
+                                        [[${detail.scatterWinText}]]
+                                    </div>
+                                </ul>
+                            </th:block>
+                            <ul>
+
+                                <li th:each="line : ${detail.winLines}">
+                                    <div class="flex-display">
+                                        [[${line[0]}]]
+                                        <div class="small-symbol">
+                                            <div th:class="'diamond_of_jungle-' + ${line[1]}"></div>
+                                        </div>
+                                        [[${line[2]}]]
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="payout" th:if="${detail.scatterWin != null and detail.scatterWin > 0}">
+                            Scatters Win
+                            <ul>
+                                <div class="flex-display">
+                                    [[${detail.scatterSize}]]
+                                    <div class="small-symbol">
+                                        <div class="diamond_of_jungle-scatter"></div>
+                                    </div>
+                                    [[${detail.scatterWinText}]]
+                                </div>
+                            </ul>
+                            No won ways
+                            <ul></ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </td>
+    </tr>
+    </tbody>
+</table>
+</body>
+</html>
