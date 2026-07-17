@@ -9,7 +9,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class Application {
 
     public static void main(String[] args) {
-        log.info("bGaming wild cash x9990 :single-server:version:20260713");
+        log.info("bGaming wild cash x9990 :single-server:version:20260717");
         SpringApplication.run(Application.class);
     }
 }

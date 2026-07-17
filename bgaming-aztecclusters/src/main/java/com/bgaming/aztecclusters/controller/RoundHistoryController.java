@@ -38,7 +38,7 @@ public class RoundHistoryController {
     private final UserMapper userMapper;
     public static String ORIGIN;
 
-    @Value("${game.gameName}")
+    @Value("${game.gameName:AztecClusters}")
     private String gameName;
 
     @Autowired

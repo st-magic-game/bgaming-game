@@ -19,6 +19,7 @@ import org.springframework.util.StringUtils;
 
 import java.util.List;
 
+import static com.bgaming.candymonsta.config.LotteryConfig.SUB_UNITS;
 import static com.game.base.common.constant.GameKey.SCENE;
 
 @Slf4j
@@ -96,7 +97,7 @@ public class PlayerServiceImpl implements IPlayerService {
 
     private static void setBackUiData(Player player, JSONObject gameInfo, SpinResponse spinResponse) {
         if (spinResponse != null) {
-            spinResponse.getBalance().setWallet(DecimalUtil.getBigDecimal2(player.getUser().getScore()));
+            spinResponse.getBalance().setWallet(DecimalUtil.getBigDecimal2(player.getUser().getScore() * SUB_UNITS));
             String jsonString = JSONObject.toJSONString(spinResponse.getFlow());
             JSONObject jsonObject = JSONObject.parseObject(jsonString);
             jsonObject.put("command", "init");

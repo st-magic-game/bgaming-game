@@ -39,7 +39,7 @@ public class RoundHistoryController {
     private final UserMapper userMapper;
     public static String ORIGIN;
 
-    @Value("${game.gamePath}")
+    @Value("${game.gamePath:Catdiana}")
     private String gameName;
     @Autowired
     public RoundHistoryController(GameService gameService, UserMapper userMapper) {
