@@ -1,0 +1,125 @@
+package com.bgaming.chickenrush;
+
+import com.alibaba.fastjson.JSONObject;
+import com.bgaming.chickenrush.entity.client.ApiClientResult;
+import com.bgaming.chickenrush.logic.ChickenRushContext;
+import com.game.base.domain.player.Player;
+import com.game.base.infrastructure.persistence.entity.User;
+import lombok.extern.slf4j.Slf4j;
+import org.mybatis.spring.annotation.MapperScan;
+import org.springframework.boot.ApplicationArguments;
+import org.springframework.boot.ApplicationRunner;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+import java.util.List;
+import java.util.Map;
+
+@Slf4j
+@MapperScan(value = {"com.bgaming.chickenrush.mapper"})
+@SpringBootApplication
+public class Application implements ApplicationRunner {
+
+    public static void main(String[] args) {
+        log.info("bGaming ChickenRush-server:version:20260716");
+        SpringApplication.run(Application.class);
+    }
+
+    @Override
+    public void run(ApplicationArguments args) throws Exception {
+        test();
+    }
+
+    private void test() {
+        Player player = new Player();
+        User user = new User();
+        user.setScore(100000);
+        player.setUser(user);
+
+        int num = 100000;
+        double stake = 100;
+        boolean bonus_buy = true;
+        int freespin_chance = 2;
+        double v = 1;
+
+        int prizeNum = 0;
+        int freeNum = 0;
+        double totalBet = 0;
+        double totalPayout = 0;
+        double bonusTotalPayout = 0;
+        boolean use = true;
+        int spinNum = 0;
+
+        int doubleMul = 0;
+        int addFreeNum1 = 0;
+        int addFreeNum2 = 0;
+        int addFreeNum3 = 0;
+        int addFreeNum4 = 0;
+        int addFreeNum5 = 0;
+
+        for (int i = 0; i < num; i++) {
+            List<ApiClientResult> clientResult = ChickenRushContext.generateApiResult(player,stake, v, bonus_buy,freespin_chance,"1",1);
+            if (use) {
+                if (bonus_buy) {
+                    if(freespin_chance == 0){
+                        totalBet += (stake * 50);
+                    }
+                    if(freespin_chance == 1){
+                        totalBet += (stake * 100);
+                    }
+                    if(freespin_chance == 2){
+                        totalBet += (stake * 300);
+                    }
+
+                }else {
+                    totalBet += stake;
+                }
+                spinNum++;
+            }
+            Map<String, List<int[]>> scatter = clientResult.get(clientResult.size() - 1).getOutcome().getSpecial_symbols().getScatter();
+            ApiClientResult apiClientResult = clientResult.get(clientResult.size() - 1);
+            JSONObject features = apiClientResult.getFeatures();
+            if (features != null && features.getInteger("freespins_left") >= 0) {
+                use = false;
+                bonusTotalPayout += apiClientResult.getOutcome().getWin().doubleValue();
+                if (features.getInteger("freespins_left") == 0) {
+                    player.getExtendJson().clear();
+                    use = true;
+                    if (apiClientResult.getOutcome().getStorage().getFinal_bonus_multipliers().size() >= 5) {
+                        doubleMul++;
+                    }
+                    if (features.getInteger("freespins_issued") == 5) {
+                        addFreeNum1++;
+                    } else
+                    if (features.getInteger("freespins_issued") <= 7) {
+                        addFreeNum2++;
+                    }else
+                    if (features.getInteger("freespins_issued") <= 10) {
+                        addFreeNum3++;
+                    }else
+                    if (features.getInteger("freespins_issued") <= 15) {
+                        addFreeNum4++;
+                    }else
+                    {
+                        addFreeNum5++;
+                    }
+                }
+            } else {
+                player.getExtendJson().clear();
+                use = true;
+            }
+
+            if (scatter != null && scatter.get("14").size() >= 3) {
+                freeNum++;
+            }
+            if (apiClientResult.getOutcome().getWin().doubleValue() >  0) {
+                totalPayout += apiClientResult.getOutcome().getWin().doubleValue();
+                prizeNum++;
+            }
+        }
+        log.info("中奖率： {}，免费概率：{},中奖次数：{}",((double)prizeNum / spinNum),((double)freeNum / spinNum),prizeNum);
+        log.info("下注分数： {}，中奖分数：{}，免费分数：{}",totalBet,totalPayout,bonusTotalPayout);
+        log.info("rtp： {}，免费rtp：{}",(totalPayout/totalBet),(bonusTotalPayout / totalPayout));
+        log.info("doubleMul = {},freeNum1 = {},freeNum2 = {},freeNum3 = {},freeNum4 = {},freeNum5 = {},freeNum = {}",doubleMul,addFreeNum1,addFreeNum2,addFreeNum3,addFreeNum4,addFreeNum5,freeNum);
+    }
+}

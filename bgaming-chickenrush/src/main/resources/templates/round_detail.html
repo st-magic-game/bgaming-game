@@ -1,0 +1,144 @@
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <link rel="stylesheet" th:href="${clientBase} + '/static/css/active_admin.css'"/>
+    <link rel="stylesheet" th:href="${clientBase} + '/static/css/application.css'"/>
+    <title></title>
+</head>
+<body>
+
+<h2 class="history_header">
+    Chicken Rush: Round Details
+</h2>
+
+<table border="1" class="history_table" id="games_history">
+    <tbody>
+    <tr>
+        <th><h4 class="center_cell">Date/Time</h4></th>
+        <th><h4 class="center_cell">Bet</h4></th>
+        <th><h4 class="center_cell">Total Win</h4></th>
+        <th><h4 class="center_cell">Profit</h4></th>
+        <th><h4 class="center_cell">Balance Before</h4></th>
+        <th><h4 class="center_cell">Balance after</h4></th>
+        <th><h4 class="center_cell">Currency</h4></th>
+        <th><h4 class="center_cell">Used Feature</h4></th>
+    </tr>
+    <tr>
+        <td class="table_delimiter" th:text="${detail.time}"></td>
+        <td class="table_delimiter" th:text="${detail.betText}"></td>
+        <td class="table_delimiter" th:text="${detail.totalWinText}"></td>
+        <td class="table_delimiter" th:text="${detail.profitText}"></td>
+        <td class="table_delimiter" th:text="${detail.balanceBeforeText}"></td>
+        <td class="table_delimiter" th:text="${detail.balanceAfterText}"></td>
+        <td class="table_delimiter" th:text="${detail.currency}"></td>
+        <td class="table_delimiter">
+            <span th:text="${detail.usedFeature != null ? detail.usedFeature : 'No'}"></span>
+        </td>
+    </tr>
+    <tr>
+        <td class="round_view" colspan="8">
+            <div th:each="result,sStat : ${detail.clientResults}">
+                <div class="round_details">
+                    <div class = 'slots_spin'>
+                        <!-- 棋盘 -->
+                        <div class="slots_outcome columns-5 rows-5">
+                            <th:block th:each="rowIdx : ${#numbers.sequence(0, result.outcome.screen.size() - 1)}">
+                                <th:block th:each="col, colStat : ${result.outcome.screen}">
+                                    <th:block th:with="cell=${col[rowIdx]}">
+                                        <div th:if="${cell == '12'}" class="chicken_rush-multiplier">
+                                            <p class="center_symbol_value_formatter" style="margin-left: 80px;">
+                                                <th:block th:each="bomb : ${result.outcome.storage.bonus_multipliers}">
+                                                    <span th:if="${bomb[0] == colStat.index and bomb[1] == rowIdx}"
+                                                          th:text="${bomb[2]}"></span>
+                                                </th:block>
+                                            </p>
+                                        </div>
+                                        <th:block th:if="${cell != '12'}">
+                                            <th:block th:if="${result.features != null && @chickenRushContext.isNewFeatureSymbol(result,colStat.index,rowIdx) && cell == result.features.getString('feature_symbol')}">
+                                                <div th:class="'chicken_rush-' + ${@chickenRushContext.getSymbolName(cell)}" style="align-self: self-start;box-sizing: border-box; border: 5px solid red;">
+                                                </div>
+                                            </th:block>
+                                            <th:block th:unless="${result.features != null && @chickenRushContext.isNewFeatureSymbol(result,colStat.index,rowIdx) && cell == result.features.getString('feature_symbol')}">
+                                                <div th:class="'chicken_rush-' + ${@chickenRushContext.getSymbolName(cell)}">
+                                                </div>
+                                            </th:block>
+                                        </th:block>
+                                    </th:block>
+                                </th:block>
+                            </th:block>
+                        </div>
+
+                        <!-- bets -->
+                        <div class="bets">
+                            <th:block th:if="${sStat.first}">
+                                Total Bet: <span th:text="${detail.betTextBuy}"></span>
+                                <th:block th:if="${detail.betText != detail.betTextBuy}">
+                                    <br>
+                                    Ways Bet
+                                    <th:block th:text="${detail.betText}"></th:block>
+                                </th:block>
+                            </th:block>
+                            <th:block th:unless="${sStat.first}">
+                                Total Bet: <span>0</span>
+                            </th:block>
+                            <th:block th:if="${result.outcome.win.doubleValue() > 0}">
+                                <br>
+                                Total Win
+                                <th:block th:text="${@chickenRushContext.dealScore(result.outcome.win.doubleValue() / 100)}"></th:block>
+                            </th:block>
+                            <br/>
+                        </div>
+
+                        <!-- payout -->
+                        <div class="payout">
+                            <!-- spin payout -->
+                            <th:block th:unless="${sStat.first}">
+                                <strong th:text="'Freespins ' + (${result.features.getIntValue('freespins_issued')} - ${result.features.getIntValue('freespins_left')}) + ' from ' + ${result.features.getIntValue('freespins_issued')}"></strong>
+                                <br>
+                                <th:block th:text="'Bonus Type - ' + ${@chickenRushContext.getBonusType(result.getFlow().getPurchased_feature())}"></th:block>
+                            </th:block>
+                            <th:block th:if="${result.features != null}">
+                                <br>
+                                <div class="flex-display">
+                                    Feature symbol:
+                                    <div class="small-symbol">
+                                        <div th:class="'chicken_rush-' + ${@chickenRushContext.getSymbolName(result.features.getString('feature_symbol'))}"></div>
+                                        <br>
+                                    </div>
+                                </div>
+                                <th:block th:if="${@chickenRushContext.hasNewFeatureSymbol(result)}">
+                                    <th:block th:text="${@chickenRushContext.getNewFeatureSymbols(result)}"></th:block>
+                                </th:block>
+                                <th:block th:if="${@chickenRushContext.accunmulatedBonuseMultipliers(result.getOutcome().getStorage().getAccumulated_bonus_multipliers()) != ''}">
+                                    <br>
+                                    <th:block th:text="${@chickenRushContext.accunmulatedBonuseMultipliers(result.getOutcome().getStorage().getAccumulated_bonus_multipliers())}"></th:block>
+                                </th:block>
+                            </th:block>
+                            <th:block th:if="${result.getOutcome().getWin().doubleValue() > 0}">
+                                <br>
+                                Win ways
+                                <ul th:each="win : ${result.getOutcome().getWins()}">
+                                    <li>
+                                        <div class="flex-display">
+                                            <div class="small-symbol">
+                                                <div th:class="'chicken_rush-' + ${@chickenRushContext.getSymbolName(result.getOutcome().getScreen().get(0).get(win.get(2)[0][0]))}"></div>
+                                            </div>
+                                            <th:block th:text="${@chickenRushContext.winWays(win)}"></th:block>
+                                        </div>
+                                    </li>
+                                </ul>
+                            </th:block>
+                            <th:block th:if="${result.getOutcome().getWin().doubleValue() == 0}">
+                                <br>
+                                No won ways
+                            </th:block>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </td>
+    </tr>
+    </tbody>
+</table>
+</body>
+</html>

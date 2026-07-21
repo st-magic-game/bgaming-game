@@ -1,0 +1,62 @@
+symbols:
+  - index: 1
+    type: 0
+    weight: 0.05
+    name: "h1"
+  - index: 2
+    type: 0
+    weight: 0.1
+    name: "h2"
+  - index: 3
+    type: 0
+    weight: 0.2
+    name: "h3"
+  - index: 4
+    type: 0
+    weight: 0.3
+    name: "m1"
+  - index: 5
+    type: 0
+    weight: 0.4
+    name: "m2"
+  - index: 6
+    type: 0
+    weight: 0.5
+    name: "l1"
+  - index: 7
+    type: 0
+    weight: 0.6
+    name: "l2"
+  - index: 8
+    type: 0
+    weight: 0.7
+    name: "l3"
+  - index: 9
+    type: 0
+    weight: 0.8
+    name: "l4"
+  - index: 10
+    type: 0
+    weight: 0.9
+    name: "l5"
+  - index: 11
+    type: 0
+    weight: 1
+    name: "l6"
+  - index: 12
+    type: 4
+    weight: 1
+    name: "multiplier"
+  - index: 13
+    type: 2
+    weight: 1
+    name: "wild"
+  - index: 14
+    type: 1
+    weight: 1
+    name: "bonus"
+  - index: 15
+    type: 3
+    weight: 1
+    name: "extra_spin"
+

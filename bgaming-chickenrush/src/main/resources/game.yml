@@ -1,0 +1,2 @@
+tableSink: com.bgaming.chickenrush.logic.GameTable
+timeout: 20000

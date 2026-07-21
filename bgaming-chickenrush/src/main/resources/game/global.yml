@@ -1,0 +1,30 @@
+rotary: 5
+rotaryNum: 5
+prizePro: 0.035
+freePro: 0.008
+diamondSymbolPro:
+  - 0.00001
+  - 0.0001
+  - 0.01
+  - 0.1
+  - 0.25
+  - 0.5
+baseBet: 20
+bonusBuy: 25
+freeSpinBuy: 2000
+wildPro:
+  - 0.001
+  - 0.05
+  - 0.2
+freeSymbol:
+  - 0.01
+  - 0.07
+  - 0.3
+  - 0.6
+issued:
+  - 0.03
+  - 0.1
+  - 0.18
+freeMultiplier:
+  - 0.08
+  - 0.15
