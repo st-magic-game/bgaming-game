@@ -1,0 +1,107 @@
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <link rel="stylesheet" th:href="${clientBase} + '/static/css/active_admin.css'"/>
+    <link rel="stylesheet" th:href="${clientBase} + '/static/css/application.css'"/>
+    <title></title>
+</head>
+<body>
+
+<h2 class="history_header">
+    Burning Chilli X: Round Details
+</h2>
+
+<table border="1" class="history_table" id="games_history">
+    <tbody>
+    <tr>
+        <th><h4 class="center_cell">Date/Time</h4></th>
+        <th><h4 class="center_cell">Bet</h4></th>
+        <th><h4 class="center_cell">Total Win</h4></th>
+        <th><h4 class="center_cell">Profit</h4></th>
+        <th><h4 class="center_cell">Balance Before</h4></th>
+        <th><h4 class="center_cell">Balance after</h4></th>
+        <th><h4 class="center_cell">Currency</h4></th>
+        <th><h4 class="center_cell">Used Feature</h4></th>
+    </tr>
+    <tr>
+        <td class="table_delimiter" th:text="${detail.time}"></td>
+        <td class="table_delimiter" th:text="${detail.betText}"></td>
+        <td class="table_delimiter" th:text="${detail.totalWinText}"></td>
+        <td class="table_delimiter" th:text="${detail.profitText}"></td>
+        <td class="table_delimiter" th:text="${detail.balanceBeforeText}"></td>
+        <td class="table_delimiter" th:text="${detail.balanceAfterText}"></td>
+        <td class="table_delimiter" th:text="${detail.currency}"></td>
+        <td class="table_delimiter">
+            <span th:text="${detail.usedFeature != null ? detail.usedFeature : 'No'}"></span>
+        </td>
+    </tr>
+    <tr>
+        <td class="round_view" colspan="8">
+            <div class="round_details">
+                <div class='slots_spin'>
+                    <!-- 棋盘 -->
+                    <div class="slots_outcome columns-5 rows-4">
+                        <th:block
+                                th:each="rowIdx : ${#numbers.sequence(0, detail.clientResult.getOutcome().getScreen()[0].size() - 1)}">
+                            <th:block th:each="col, colStat : ${detail.clientResult.getOutcome().getScreen()}">
+                                <th:block th:with="cell=${col[rowIdx]}">
+                                    <div th:class="'burning_chilli_x-' + ${@burningChilliXContext.getSymbolName(cell)}">
+                                    </div>
+                                </th:block>
+                            </th:block>
+                        </th:block>
+                    </div>
+
+                    <div class="bets">
+                        <div>
+                            Mode:
+                            <th:block th:text="${detail.clientResult.getOutcome().getStorage().mode}"></th:block>
+                            lines
+                        </div>
+                        Total Bet
+                        <th:block th:text="${detail.betText}"></th:block>
+                        <br>
+                        Total Win
+                        <th:block th:text="${detail.totalWinText}"></th:block>
+                    </div>
+
+                    <div class="payout">
+
+                        <th:block
+                                th:if="${@burningChilliXContext.showLine(detail.clientResult.getOutcome().getWins()) }">
+                            Win lines
+                        </th:block>
+                        <th:block
+                                th:if="${!@burningChilliXContext.showLine(detail.clientResult.outcome.wins) && @burningChilliXContext.showScatter(detail.clientResult.outcome.wins)}">
+                            No won lines
+                        </th:block>
+                        <ul>
+                            <th:block th:if="${@burningChilliXContext.showLine(detail.clientResult.getOutcome().getWins()) }">
+                                <li th:each="win : ${@burningChilliXContext.getLineObj(detail.clientResult.getOutcome().getWins())}">
+                                    <div class="flex-display">
+                                        <th:block th:text="${@burningChilliXContext.getLine(win)}"></th:block>
+                                        x
+                                        <div class="small-symbol">
+                                            <div th:class="'burning_chilli_x-' + ${@burningChilliXContext.lineSymbol(detail.clientResult,win)}"></div>
+                                        </div>
+                                        Line
+                                        <th:block th:text="${win.get(3)}"></th:block>
+                                        -
+                                        <th:block th:text="${@burningChilliXContext.getLineWin(win)}"></th:block>
+                                    </div>
+                                </li>
+                            </th:block>
+                        </ul>
+                        <ul>
+                            <th:block th:if="${@burningChilliXContext.showScatter(detail.clientResult.outcome.wins)}">
+                                <li>Scatter <th:block th:text="${@burningChilliXContext.getScatterWin(detail.clientResult.outcome.wins)}"></th:block> </li>
+                            </th:block>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </td>
+    </tr>
+    </tbody>
+</table>
+</body>
+</html>

@@ -1,0 +1,701 @@
+payLines:
+  - id: 0
+    positions:
+      - 1
+      - 1
+      - 1
+      - 1
+      - 1
+  - id: 1
+    positions:
+      - 2
+      - 2
+      - 2
+      - 2
+      - 2
+  - id: 2
+    positions:
+      - 0
+      - 0
+      - 0
+      - 0
+      - 0
+  - id: 3
+    positions:
+      - 3
+      - 3
+      - 3
+      - 3
+      - 3
+  - id: 4
+    positions:
+      - 1
+      - 0
+      - 0
+      - 0
+      - 1
+  - id: 5
+    positions:
+      - 2
+      - 3
+      - 3
+      - 3
+      - 2
+  - id: 6
+    positions:
+      - 2
+      - 1
+      - 2
+      - 1
+      - 2
+  - id: 7
+    positions:
+      - 1
+      - 2
+      - 1
+      - 2
+      - 1
+  - id: 8
+    positions:
+      - 0
+      - 1
+      - 0
+      - 1
+      - 0
+  - id: 9
+    positions:
+      - 3
+      - 2
+      - 3
+      - 2
+      - 3
+  - id: 10
+    positions:
+      - 0
+      - 0
+      - 1
+      - 0
+      - 0
+  - id: 11
+    positions:
+      - 3
+      - 3
+      - 2
+      - 3
+      - 3
+  - id: 12
+    positions:
+      - 0
+      - 0
+      - 2
+      - 0
+      - 0
+  - id: 13
+    positions:
+      - 3
+      - 3
+      - 1
+      - 3
+      - 3
+  - id: 14
+    positions:
+      - 0
+      - 0
+      - 3
+      - 0
+      - 0
+  - id: 15
+    positions:
+      - 3
+      - 3
+      - 0
+      - 3
+      - 3
+  - id: 16
+    positions:
+      - 1
+      - 1
+      - 2
+      - 1
+      - 1
+  - id: 17
+    positions:
+      - 2
+      - 2
+      - 1
+      - 2
+      - 2
+  - id: 18
+    positions:
+      - 0
+      - 3
+      - 0
+      - 3
+      - 0
+  - id: 19
+    positions:
+      - 3
+      - 0
+      - 3
+      - 0
+      - 3
+  - id: 20
+    positions:
+      - 1
+      - 0
+      - 1
+      - 0
+      - 1
+  - id: 21
+    positions:
+      - 2
+      - 3
+      - 2
+      - 3
+      - 2
+  - id: 22
+    positions:
+      - 1
+      - 2
+      - 3
+      - 2
+      - 1
+  - id: 23
+    positions:
+      - 2
+      - 1
+      - 0
+      - 1
+      - 2
+  - id: 24
+    positions:
+      - 1
+      - 0
+      - 1
+      - 2
+      - 3
+  - id: 25
+    positions:
+      - 0
+      - 1
+      - 2
+      - 3
+      - 2
+  - id: 26
+    positions:
+      - 1
+      - 1
+      - 1
+      - 0
+      - 1
+  - id: 27
+    positions:
+      - 1
+      - 1
+      - 1
+      - 2
+      - 1
+  - id: 28
+    positions:
+      - 2
+      - 2
+      - 2
+      - 3
+      - 2
+  - id: 29
+    positions:
+      - 2
+      - 2
+      - 2
+      - 1
+      - 2
+  - id: 30
+    positions:
+      - 1
+      - 1
+      - 0
+      - 0
+      - 0
+  - id: 31
+    positions:
+      - 1
+      - 1
+      - 2
+      - 2
+      - 2
+  - id: 32
+    positions:
+      - 2
+      - 2
+      - 1
+      - 1
+      - 1
+  - id: 33
+    positions:
+      - 2
+      - 2
+      - 3
+      - 3
+      - 3
+  - id: 34
+    positions:
+      - 1
+      - 2
+      - 2
+      - 2
+      - 1
+  - id: 35
+    positions:
+      - 2
+      - 1
+      - 1
+      - 1
+      - 2
+  - id: 36
+    positions:
+      - 1
+      - 1
+      - 0
+      - 1
+      - 1
+  - id: 37
+    positions:
+      - 2
+      - 2
+      - 3
+      - 2
+      - 2
+  - id: 38
+    positions:
+      - 0
+      - 1
+      - 2
+      - 3
+      - 3
+  - id: 39
+    positions:
+      - 3
+      - 2
+      - 1
+      - 0
+      - 0
+  - id: 40
+    positions:
+      - 0
+      - 0
+      - 1
+      - 1
+      - 1
+  - id: 41
+    positions:
+      - 3
+      - 3
+      - 2
+      - 2
+      - 2
+  - id: 42
+    positions:
+      - 0
+      - 0
+      - 0
+      - 1
+      - 0
+  - id: 43
+    positions:
+      - 3
+      - 3
+      - 3
+      - 2
+      - 3
+  - id: 44
+    positions:
+      - 0
+      - 0
+      - 1
+      - 2
+      - 3
+  - id: 45
+    positions:
+      - 3
+      - 3
+      - 2
+      - 1
+      - 0
+  - id: 46
+    positions:
+      - 1
+      - 1
+      - 3
+      - 1
+      - 1
+  - id: 47
+    positions:
+      - 2
+      - 2
+      - 0
+      - 2
+      - 2
+  - id: 48
+    positions:
+      - 0
+      - 1
+      - 1
+      - 1
+      - 0
+  - id: 49
+    positions:
+      - 3
+      - 2
+      - 2
+      - 2
+      - 3
+  - id: 50
+    positions:
+      - 0
+      - 3
+      - 3
+      - 2
+      - 1
+  - id: 51
+    positions:
+      - 3
+      - 0
+      - 0
+      - 1
+      - 2
+  - id: 52
+    positions:
+      - 2
+      - 3
+      - 1
+      - 2
+      - 0
+  - id: 53
+    positions:
+      - 1
+      - 0
+      - 2
+      - 1
+      - 3
+  - id: 54
+    positions:
+      - 0
+      - 2
+      - 0
+      - 3
+      - 1
+  - id: 55
+    positions:
+      - 3
+      - 1
+      - 3
+      - 0
+      - 2
+  - id: 56
+    positions:
+      - 1
+      - 2
+      - 0
+      - 1
+      - 3
+  - id: 57
+    positions:
+      - 2
+      - 1
+      - 3
+      - 2
+      - 0
+  - id: 58
+    positions:
+      - 1
+      - 2
+      - 3
+      - 0
+      - 1
+  - id: 59
+    positions:
+      - 2
+      - 1
+      - 0
+      - 3
+      - 2
+  - id: 60
+    positions:
+      - 1
+      - 1
+      - 2
+      - 0
+      - 3
+  - id: 61
+    positions:
+      - 2
+      - 2
+      - 1
+      - 3
+      - 0
+  - id: 62
+    positions:
+      - 1
+      - 1
+      - 3
+      - 2
+      - 0
+  - id: 63
+    positions:
+      - 2
+      - 2
+      - 0
+      - 1
+      - 3
+  - id: 64
+    positions:
+      - 0
+      - 0
+      - 3
+      - 1
+      - 2
+  - id: 65
+    positions:
+      - 3
+      - 3
+      - 0
+      - 2
+      - 1
+  - id: 66
+    positions:
+      - 2
+      - 3
+      - 0
+      - 1
+      - 2
+  - id: 67
+    positions:
+      - 1
+      - 0
+      - 3
+      - 2
+      - 1
+  - id: 68
+    positions:
+      - 2
+      - 3
+      - 2
+      - 1
+      - 0
+  - id: 69
+    positions:
+      - 0
+      - 1
+      - 2
+      - 2
+      - 3
+  - id: 70
+    positions:
+      - 0
+      - 0
+      - 2
+      - 3
+      - 1
+  - id: 71
+    positions:
+      - 3
+      - 3
+      - 1
+      - 0
+      - 2
+  - id: 72
+    positions:
+      - 0
+      - 1
+      - 3
+      - 2
+      - 0
+  - id: 73
+    positions:
+      - 3
+      - 2
+      - 0
+      - 1
+      - 3
+  - id: 74
+    positions:
+      - 0
+      - 2
+      - 1
+      - 3
+      - 1
+  - id: 75
+    positions:
+      - 3
+      - 1
+      - 2
+      - 0
+      - 1
+  - id: 76
+    positions:
+      - 0
+      - 2
+      - 2
+      - 3
+      - 1
+  - id: 77
+    positions:
+      - 3
+      - 1
+      - 1
+      - 0
+      - 2
+  - id: 78
+    positions:
+      - 2
+      - 3
+      - 3
+      - 1
+      - 0
+  - id: 79
+    positions:
+      - 1
+      - 0
+      - 0
+      - 2
+      - 3
+  - id: 80
+    positions:
+      - 0
+      - 2
+      - 3
+      - 3
+      - 1
+  - id: 81
+    positions:
+      - 3
+      - 1
+      - 0
+      - 0
+      - 2
+  - id: 82
+    positions:
+      - 0
+      - 3
+      - 0
+      - 2
+      - 1
+  - id: 83
+    positions:
+      - 3
+      - 0
+      - 3
+      - 1
+      - 2
+  - id: 84
+    positions:
+      - 1
+      - 3
+      - 0
+      - 2
+      - 0
+  - id: 85
+    positions:
+      - 2
+      - 0
+      - 3
+      - 1
+      - 3
+  - id: 86
+    positions:
+      - 1
+      - 3
+      - 1
+      - 0
+      - 2
+  - id: 87
+    positions:
+      - 2
+      - 0
+      - 2
+      - 3
+      - 1
+  - id: 88
+    positions:
+      - 0
+      - 3
+      - 1
+      - 2
+      - 1
+  - id: 89
+    positions:
+      - 3
+      - 0
+      - 2
+      - 1
+      - 2
+  - id: 90
+    positions:
+      - 1
+      - 2
+      - 3
+      - 3
+      - 0
+  - id: 91
+    positions:
+      - 2
+      - 1
+      - 0
+      - 0
+      - 3
+  - id: 92
+    positions:
+      - 1
+      - 2
+      - 1
+      - 0
+      - 3
+  - id: 93
+    positions:
+      - 2
+      - 1
+      - 2
+      - 3
+      - 0
+  - id: 94
+    positions:
+      - 0
+      - 3
+      - 3
+      - 1
+      - 2
+  - id: 95
+    positions:
+      - 3
+      - 0
+      - 0
+      - 2
+      - 1
+  - id: 96
+    positions:
+      - 0
+      - 3
+      - 2
+      - 1
+      - 2
+  - id: 97
+    positions:
+      - 3
+      - 0
+      - 1
+      - 2
+      - 1
+  - id: 98
+    positions:
+      - 1
+      - 2
+      - 0
+      - 0
+      - 3
+  - id: 99
+    positions:
+      - 2
+      - 1
+      - 3
+      - 3
+      - 0

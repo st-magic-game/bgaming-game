@@ -1,0 +1,25 @@
+symbols:
+  - index: 0
+    name: wild
+    weight: 2
+  - index: 1
+    name: h1
+    weight: 6
+  - index: 2
+    name: h2
+    weight: 8
+  - index: 3
+    name: h3
+    weight: 10
+  - index: 4
+    name: l1
+    weight: 18
+  - index: 5
+    name: l2
+    weight: 24
+  - index: 6
+    name: l3
+    weight: 32
+  - index: 7
+    name: scatter
+    weight: 2
