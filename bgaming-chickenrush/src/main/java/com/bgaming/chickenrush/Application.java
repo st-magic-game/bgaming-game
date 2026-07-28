@@ -21,13 +21,13 @@ import java.util.Map;
 public class Application implements ApplicationRunner {
 
     public static void main(String[] args) {
-        log.info("bGaming ChickenRush-server:version:20260716");
+        log.info("bGaming ChickenRush-server:version:20260728");
         SpringApplication.run(Application.class);
     }
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
-        test();
+//        test();
     }
 
     private void test() {

@@ -399,8 +399,7 @@ public class ChickenRushContext {
     private static void settlementMain(Outcome outcome, double stake) {
         List<WinLine> winLines = getWinLine(outcome, stake, true);
         double totalWins = 0;
-        for (int i = 0; i < winLines.size(); i++) {
-            WinLine winLine = winLines.get(0);
+        for (WinLine winLine : winLines) {
             List<Object> win = new ArrayList<>();
             win.add("ways");
             win.add(winLine.getPayout());
@@ -707,7 +706,14 @@ public class ChickenRushContext {
 
     public static String winWays(List<Object> objects) {
         //: (Ways count formula)[5 * 4 * 4 * 1 * 5]: (Ways count)[400] * (Base bet count)[3.0] * (Payment per way(length=5))[0.06] = 72
-        double win = DecimalUtil.getBigDecimal2((1.0 * (Integer)objects.get(1)) / SUB_UNITS).doubleValue();
+        Object o = objects.get(1);
+        double win = 0;
+        if (o instanceof Integer) {
+            win = DecimalUtil.getBigDecimal2((1.0 * (Integer)o) / SUB_UNITS).doubleValue();
+        } else if (o instanceof BigDecimal)
+        {
+            win = DecimalUtil.getBigDecimal2((((BigDecimal) o).doubleValue()) / SUB_UNITS).doubleValue();
+        }
         List<List<Integer>>  list = (List<List<Integer>>) objects.get(2);
         int length = list.size();
         int num = 1;
