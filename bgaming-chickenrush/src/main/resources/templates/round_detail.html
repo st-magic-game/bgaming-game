@@ -55,10 +55,22 @@
                                         <th:block th:if="${cell != '12'}">
                                             <th:block th:if="${result.features != null && @chickenRushContext.isNewFeatureSymbol(result,colStat.index,rowIdx) && cell == result.features.getString('feature_symbol')}">
                                                 <div th:class="'chicken_rush-' + ${@chickenRushContext.getSymbolName(cell)}" style="align-self: self-start;box-sizing: border-box; border: 5px solid red;">
+                                                    <p class="center_symbol_value_formatter" style="margin-left: 80px;" th:if="${result.outcome.storage.final_bonus_multipliers !=null && result.outcome.storage.final_bonus_multipliers.size() > 0}">
+                                                        <th:block th:each="bomb : ${result.outcome.storage.final_bonus_multipliers}">
+                                                    <span th:if="${bomb[0] == colStat.index and bomb[1] == rowIdx}"
+                                                          th:text="${bomb[2]}"></span>
+                                                        </th:block>
+                                                    </p>
                                                 </div>
                                             </th:block>
                                             <th:block th:unless="${result.features != null && @chickenRushContext.isNewFeatureSymbol(result,colStat.index,rowIdx) && cell == result.features.getString('feature_symbol')}">
                                                 <div th:class="'chicken_rush-' + ${@chickenRushContext.getSymbolName(cell)}">
+                                                    <p class="center_symbol_value_formatter" style="margin-left: 80px;" th:if="${result.outcome.storage.final_bonus_multipliers !=null && result.outcome.storage.final_bonus_multipliers.size() > 0}">
+                                                        <th:block th:each="bomb : ${result.outcome.storage.final_bonus_multipliers}">
+                                                    <span th:if="${bomb[0] == colStat.index and bomb[1] == rowIdx}"
+                                                          th:text="${bomb[2]}"></span>
+                                                        </th:block>
+                                                    </p>
                                                 </div>
                                             </th:block>
                                         </th:block>
@@ -122,7 +134,7 @@
                                             <div class="small-symbol">
                                                 <div th:class="'chicken_rush-' + ${@chickenRushContext.getSymbolName(result.getOutcome().getScreen().get(0).get(win.get(2)[0][0]))}"></div>
                                             </div>
-                                            <th:block th:text="${@chickenRushContext.winWays(win)}"></th:block>
+                                            <th:block th:text="${@chickenRushContext.winWays(win,result.outcome.storage.final_bonus_multipliers)}"></th:block>
                                         </div>
                                     </li>
                                 </ul>

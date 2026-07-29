@@ -21,7 +21,7 @@ import java.util.Map;
 public class Application implements ApplicationRunner {
 
     public static void main(String[] args) {
-        log.info("bGaming ChickenRush-server:version:20260728");
+        log.info("bGaming ChickenRush-server:version:20260729");
         SpringApplication.run(Application.class);
     }
 

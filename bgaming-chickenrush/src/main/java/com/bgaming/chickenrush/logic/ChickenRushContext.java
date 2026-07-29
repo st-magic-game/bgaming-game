@@ -607,8 +607,8 @@ public class ChickenRushContext {
         clientResults.forEach(c -> totalWin.updateAndGet(v -> v + c.getOutcome().getWin().doubleValue()));
         BigDecimal realBet = DecimalUtil.getBigDecimal2(betScore);
         String usedFeature = "No";
-        if (clientResults.get(0).getFlow().getPurchased_feature() != null) {
-            usedFeature =  "bonus_buy";
+        if (clientResults.get(0).getFlow().getPurchased_feature() != null && clientResults.get(0).getFlow().getPurchased_feature().containsKey("name")) {
+            usedFeature =  "Bonus buy";
         }
         String betTextBuy = realBet.toPlainString();
 
@@ -704,7 +704,7 @@ public class ChickenRushContext {
         return "Accumulated bonus multipliers: " + stringBuilder.toString();
     }
 
-    public static String winWays(List<Object> objects) {
+    public static String winWays(List<Object> objects,List<int[]> final_bonus_multipliers) {
         //: (Ways count formula)[5 * 4 * 4 * 1 * 5]: (Ways count)[400] * (Base bet count)[3.0] * (Payment per way(length=5))[0.06] = 72
         Object o = objects.get(1);
         double win = 0;
@@ -720,9 +720,19 @@ public class ChickenRushContext {
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append("[");
         for (int i = 0; i < length; i++) {
-            int x = list.get(i).size();
-            num *= x;
-            stringBuilder.append(x);
+            final int[] x = {list.get(i).size()};
+            if (final_bonus_multipliers != null && !final_bonus_multipliers.isEmpty()) {
+                int finalI = i;
+                list.get(i).forEach(l -> {
+                    final_bonus_multipliers.forEach(f -> {
+                        if (f[0] == finalI && f[1] == l) {
+                            x[0] = x[0] + f[2] - 1;
+                        }
+                    });
+                });
+            }
+            num *= x[0];
+            stringBuilder.append(x[0]);
             if (i < length - 1) {
                 stringBuilder.append("*");
             } else {
