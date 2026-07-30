@@ -31,6 +31,8 @@
         <module>bgaming-chickenrush</module>
         <module>bgaming-luckyandmagic</module>
         <module>bgaming-burningchillix</module>
+        <module>bgaming-wildcash</module>
+        <module>bgaming-pandaluck</module>
     </modules>
 
     <properties>
